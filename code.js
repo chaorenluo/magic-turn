@@ -41,7 +41,9 @@ const vue = {
     }
   },
   methods: {
+    number_format,
     focusTWD() {
+      this.$router.push(path)
       this.focus = 'twd';
       this.twd_input = 1;
     },

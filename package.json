@@ -21,6 +21,8 @@
   "dependencies": {
     "@babel/generator": "^7.19.0",
     "@babel/parser": "^7.19.0",
-    "@babel/traverse": "^7.19.0"
+    "@babel/traverse": "^7.19.0",
+    "htmlparser2": "^8.0.1",
+    "parse5": "^7.1.1"
   }
 }

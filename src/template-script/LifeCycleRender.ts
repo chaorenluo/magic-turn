@@ -1,4 +1,5 @@
 import generate from "@babel/generator";
+import {modifyCycleName} from './utils'
 
 interface CycleVariable {
   name: string;
@@ -33,13 +34,9 @@ export default class LifeCycleAnalysis {
     return !!cycleTypeV3[nodeName]
   }
 
-  modifyCycleName(str:string) {
-    return "on"+str.charAt(0).toUpperCase()+str.substring(1)
-  }
-
   init(cycleNode:any) {
     
-    let nodeName  = this.modifyCycleName(cycleTypeV3[cycleNode.key.name as CycleTypeV3Type]);
+    let nodeName  = modifyCycleName(cycleTypeV3[cycleNode.key.name as CycleTypeV3Type],'on');
     this.cycleKey.add(nodeName);
     const cycleItem = {
       name: nodeName,

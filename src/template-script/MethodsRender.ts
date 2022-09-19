@@ -19,6 +19,7 @@ export default class MethodsRender{
 
   init() { 
     this.methodsNode.forEach(node => {
+      if(node.type === 'ObjectProperty') return
       const nodeName = node.key.name;
       this.methodsKey.add(nodeName);
       const methodsItem = {
