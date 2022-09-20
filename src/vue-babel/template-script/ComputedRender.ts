@@ -63,7 +63,6 @@ export default class ComputedRender{
         }
       })
     }
-    console.log(code)
     return code
   }
 }

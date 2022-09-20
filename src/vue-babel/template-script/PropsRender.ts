@@ -31,7 +31,6 @@ export default class PropsRender{
   async render() {
     let propsCode = await generate.default(this.propsNode)
     const code = `const props = defineProps(${propsCode.code});\n`
-    console.log(code)
     return code
   }
 }

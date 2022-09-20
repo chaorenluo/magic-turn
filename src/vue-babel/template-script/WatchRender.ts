@@ -98,7 +98,7 @@ export default class WatchRender {
     [...methodCode, ...propertyCode].forEach(item => {
       code+=item
     })
-    console.log(code)
+    return code;
   }
 
 

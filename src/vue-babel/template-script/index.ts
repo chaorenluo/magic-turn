@@ -32,11 +32,10 @@ enum optionsApi {
 
 
 
-const getAst = async (path: string) => {
-  const code = await readFile(path, { encoding: 'utf-8' });
-
-  const ast = parse(code)
-
+const scriptRender = async (code: string) => {
+  const ast = parse(code, {
+    sourceType: 'module'
+  })
   traverse.default(ast, {
     ObjectMethod(path) {
       const nodeName = path.node.key.name;
@@ -67,7 +66,9 @@ const getAst = async (path: string) => {
           break;
       }
     },
-
+    ImportDeclaration(path) {
+      importRender.addImportGlobal(path.node)
+    },
     MemberExpression(path) {
       if (path.node.object.type === 'ThisExpression') {
         const name = path.node.property.name;
@@ -75,8 +76,8 @@ const getAst = async (path: string) => {
         if (dataRender && dataRender?.hasReactiveKey(name)) {
           newNode.object = t.identifier('state')
         } else if (computedRender && computedRender?.hasReactiveKey(name)) {
-           newNode.object = newNode.property;
-           newNode.property = t.identifier('value')
+          newNode.object = newNode.property;
+          newNode.property = t.identifier('value')
         } else if (propsRender && propsRender?.hasPropsKey(name)) {
           newNode.object = t.identifier('props')
         } else {
@@ -111,14 +112,23 @@ const getAst = async (path: string) => {
   //  let code =  await generate.default(ast);
   // console.log(generate.default(ast).code)
   //  console.log(code)
-  importRender && importRender.render()
-  // propsRender && await propsRender.render();
-  // dataRender && await dataRender.render()
-  // computedRender && await computedRender.render()
-  methodsRender && await methodsRender.render()
-  // watchRender && await watchRender.render()
-  lifeCycleRender && await lifeCycleRender.render()
-
+  let newCode = '';
+  newCode += importRender ?await importRender.render() : '';
+  newCode += propsRender ? await propsRender.render() : '';
+  newCode += dataRender ? await dataRender.render() : '';
+  newCode += computedRender ? await computedRender.render() : '';
+  newCode += methodsRender ? await methodsRender.render() : '';
+  newCode += watchRender ? await watchRender.render() : '';
+  newCode += lifeCycleRender ? await lifeCycleRender.render() : '';
+  return {
+    newCode,
+    dataRender,
+    computedRender,
+    methodsRender,
+    lifeCycleRender,
+    propsRender,
+    watchRender
+  }
 }
 
-export default getAst
+export { scriptRender }

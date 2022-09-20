@@ -43,9 +43,8 @@ export default class DataRender{
       })
     }
     if(reactiveCode && reactiveCode.code){
-      code+=`const state = reactive(${reactiveCode.code})\n\n`
+      code+=`\nconst state = reactive(${reactiveCode.code});\n`
     }
-    console.log(code)
     return code
   }
   

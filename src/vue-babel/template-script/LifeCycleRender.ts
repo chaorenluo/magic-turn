@@ -74,7 +74,6 @@ export default class LifeCycleAnalysis {
         if(codeItem) code+=codeItem+'\n'
       })
     }
-    console.log(code)
     return code
   }
 

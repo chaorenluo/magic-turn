@@ -1,4 +1,5 @@
-import {modifyCycleName} from './utils'
+import generate from "@babel/generator";
+import { modifyCycleName } from './utils'
 const vueApi = {
   "$emit": "emit",
   "$nextTick": "nextTick"
@@ -8,6 +9,8 @@ type vueApiType = keyof typeof vueApi;
 
 const importRender = {
 
+  importGlobal: [],
+  
   vueApiImports: new Set<string>(),
 
   globalApi: new Set<string>(),
@@ -39,6 +42,10 @@ const importRender = {
     this.refKey.add(name)
   },
 
+  addImportGlobal(node:any) {
+    this.importGlobal.push(node)
+  },
+
   addVueApi(value: string) {
     this.vueApiImports.add(value)
   },
@@ -68,17 +75,28 @@ const importRender = {
     return code;
   },
 
-  renderImports() {
-    let code = `import {${Array.from(this.vueApiImports).join(',')}} from "vue"\n`
-    if (this.routerApi.size>0) {
-      code+=`import {${Array.from(this.routerApi).join(',')}} from "vue-router"` 
+  async renderImportGlobal() {
+    let code = '';
+    if (this.importGlobal.length > 0) {
+      const data = await Promise.all(this.importGlobal.map(item => generate.default(item).code+'\n'))
+      code = '\n'+data.join('');
     }
-    console.log(code)
+    return code;
+  },
+
+  renderImports() {
+    let code = `\nimport {${Array.from(this.vueApiImports).join(',')}} from "vue";\n`
+    if (this.routerApi.size>0) {
+      code+=`import {${Array.from(this.routerApi).join(',')}} from "vue-router";` 
+    }
     return code;
   },
 
   renderEmit() {
-    const code = `const emit = defineEmits([${Array.from(this.emitKey).map(item => `"${item.toString()}"`)}])`;
+    let code = '';
+    if (this.emitKey.size > 0) {
+      code = `const emit = defineEmits([${Array.from(this.emitKey).map(item => `"${item.toString()}"`)}]);`;
+    }
     return code
   },
 
@@ -90,12 +108,11 @@ const importRender = {
         code += `const ${refName} = ref(null);\n`
       })
     }
-    console.log(code)
     return code
   },
 
-  render() {
-    return this.renderImports()+this.renderRouter()+this.renderEmit()+this.renderRef()
+  async render() {
+    return  this.renderImports()+(await this.renderImportGlobal())+this.renderRouter()+this.renderEmit()+this.renderRef()
   }
 
 

@@ -16,6 +16,9 @@
 </template>
 
 <script>
+
+import luckyInfo from "~/components/mobileGame/prepaid/luckyInfo";
+
 export default {
  asyncData({store}){
   const access_token = store.state.user.access_token;
@@ -37,6 +40,7 @@ export default {
      receive(){
         if(this.show) return;
          this.coupon();
+         this.$router.push('3333')
      },
      coupon(){
          this.$axios.get('activity/get_game_voucher').then((res)=>{

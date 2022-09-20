@@ -52,7 +52,6 @@ export default class MethodsRender{
           if(codeItem) code+=codeItem 
         })
      }
-     console.log(code)
      return code
   }
 
