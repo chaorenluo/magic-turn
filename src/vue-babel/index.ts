@@ -14,17 +14,16 @@ export const vueRender = async (html: any) => {
       elem.attribs = {setup:""}
       templateMap.set('script',elem.children[0])
     }
-    console.log(elem.attribs);
   }, dom, true)
 
   let scriptNode = templateMap.get("script");
   let scriptData = await scriptRender(scriptNode.data);
   scriptNode.data = scriptData.newCode;
-
-  const contentHtml = DomUtils.getOuterHTML(dom);
+  await templateRender(dom,scriptData)
+  const contentHtml = DomUtils.getOuterHTML(dom, {
+    encodeEntities:'utf8'
+  });
   console.log('contentHtml---',contentHtml)
-  // traverse.default(templateMap.get('template'), {
-
-  // })
+ 
 
 }
