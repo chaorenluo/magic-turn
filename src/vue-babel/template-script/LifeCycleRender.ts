@@ -28,7 +28,11 @@ export default class LifeCycleAnalysis {
 
   cycleKey: Set<string> = new Set<string>();
   cycleBodyMap: Map<string, CycleVariable> = new Map();
+  options: any;
 
+  constructor(options) {
+    this.options = options;
+  }
 
   static isCycle(nodeName:CycleTypeV3Type): boolean {
     return !!cycleTypeV3[nodeName]

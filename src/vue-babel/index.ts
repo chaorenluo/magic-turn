@@ -1,7 +1,7 @@
-import { scriptRender } from './template-script'
+import  { scriptRender } from './template-script'
 import {templateRender} from './template-html'
 import { Parser, DomHandler, DomUtils } from "htmlparser2";
-export const vueRender = async (html: any) => {
+const vueRender = async (html: any) => {
 
   let templateMap = new Map();
   const handler = new DomHandler();
@@ -24,6 +24,9 @@ export const vueRender = async (html: any) => {
     encodeEntities:'utf8'
   });
   console.log('contentHtml---',contentHtml)
- 
+}
 
+export default {
+  scriptRender,
+  vueRender
 }

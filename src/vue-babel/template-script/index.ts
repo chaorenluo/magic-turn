@@ -15,12 +15,6 @@ import WatchRender from './WatchRender'
 const { parse } = parser;
 
 
-let dataRender: DataRender;
-let computedRender: ComputedRender;
-let methodsRender: MethodsRender;
-let lifeCycleRender: LifeCycleRender = new LifeCycleRender()
-let propsRender: PropsRender;
-let watchRender: WatchRender;
 
 enum optionsApi {
   data = 'data',
@@ -31,8 +25,30 @@ enum optionsApi {
 }
 
 
+const loopProperty = (path) => {
+  if (!path.node.property) {
+    return path.node.type
+  }
+ return loopProperty(path.context.parentPath)
+}
 
-const scriptRender = async (code: string) => {
+const createSetupState = () => {
+  importRender.addVueApi('getCurrentInstance')
+  let node = t.memberExpression(t.callExpression(t.identifier('getCurrentInstance'),[]), t.identifier('setupState'));
+  return node
+}
+
+
+const scriptRender = async (code: string,options) => {
+  
+  let dataRender: DataRender;
+  let computedRender: ComputedRender;
+  let methodsRender: MethodsRender;
+  let lifeCycleRender: LifeCycleRender = new LifeCycleRender(options)
+  let propsRender: PropsRender;
+  let watchRender: WatchRender;
+
+
   const ast = parse(code, {
     sourceType: 'module'
   })
@@ -50,17 +66,17 @@ const scriptRender = async (code: string) => {
       const nodeName = path.node.key.name;
       switch (nodeName) {
         case optionsApi.computed:
-          computedRender = new ComputedRender(properties)
+          computedRender = new ComputedRender(properties,options)
           importRender.addVueApi('computed')
           break;
         case optionsApi.methods:
-          methodsRender = new MethodsRender(properties)
+          methodsRender = new MethodsRender(properties,options)
           break;
         case optionsApi.props:
-          propsRender = new PropsRender(path.node.value)
+          propsRender = new PropsRender(path.node.value,options)
           break;
         case optionsApi.watch:
-          watchRender = new WatchRender(path.node.value, dataRender)
+          watchRender = new WatchRender(path.node.value, dataRender,options)
           break;
         default:
           break;
@@ -71,9 +87,13 @@ const scriptRender = async (code: string) => {
     },
     MemberExpression(path) {
       if (path.node.object.type === 'ThisExpression') {
-        const name = path.node.property.name;
-        let newNode = path.node
-        if (dataRender && dataRender?.hasReactiveKey(name)) {
+        const property = path.node.property;
+        const name = property.name;
+        let newNode = path.node;
+        if (property.type === 'TemplateLiteral'){
+          let type = loopProperty(path)
+          newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier('state')
+        }else if (dataRender && dataRender?.hasReactiveKey(name)) {
           newNode.object = t.identifier('state')
         } else if (computedRender && computedRender?.hasReactiveKey(name)) {
           newNode.object = newNode.property;
@@ -132,3 +152,4 @@ const scriptRender = async (code: string) => {
 }
 
 export { scriptRender }
+

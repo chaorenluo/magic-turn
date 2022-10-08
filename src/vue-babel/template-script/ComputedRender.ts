@@ -11,9 +11,11 @@ export default class ComputedRender{
   computeNode: Array<any>;
   computedKey: Set<string> = new Set();
   computeBodyMap: Map<string, FunctionVariable> = new Map();
-  
-  constructor(computeNode:Array<any>) {
+  options: any;
+
+  constructor(computeNode:Array<any>,options) {
     this.computeNode = computeNode;
+    this.options = options;
     this.init()
   }
 

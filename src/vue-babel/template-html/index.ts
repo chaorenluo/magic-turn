@@ -11,6 +11,7 @@ let reactiveKeyMap = new Set<string>();
 const addPrefixIdentifier = (path: any, name: string) => {
   const identifierNode = path.node;
   let node = t.memberExpression(t.identifier('state'), identifierNode)
+
   path.replaceWith(node)
 }
 

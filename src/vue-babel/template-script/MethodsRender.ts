@@ -11,9 +11,11 @@ export default class MethodsRender{
   methodsNode: Array<any>;
   methodsKey: Set<string> = new Set();
   methodsBodyMap: Map<string, MethodsVariable> = new Map();
+  options: any;
 
   constructor(methodsNode: Array<any>) {
     this.methodsNode = methodsNode;
+    this.options = options;
     this.init()
   }
 

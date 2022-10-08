@@ -5,9 +5,11 @@ export default class DataRender{
   variableDeclaration: Array<any> = [];
   reactiveData: any = {};
   reactiveKey: Set<string> = new Set();
+  options: any;
   
-  constructor(dataNode: Array<any>) {
+  constructor(dataNode: Array<any>,options) {
     this.dataNode = dataNode;
+    this.options = options;
     this.init();
   }
 

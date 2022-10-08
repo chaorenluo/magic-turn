@@ -4,9 +4,10 @@ export default class PropsRender{
   propsNode: Array<any> = [];
   propsKey: Set<string> = new Set();
   isArrayExpression=false;
-
+  options: any;
   constructor(propsNode:any) {
     this.propsNode = propsNode;
+    this.options = options;
     this.init();
   }
 

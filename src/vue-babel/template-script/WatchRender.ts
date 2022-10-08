@@ -5,11 +5,13 @@ export default class WatchRender {
   objectMethod: Array<any> = [];
   objectProperty: Array<any> = [];
   watchKey: Set<string> = new Set();
-  dataAnalysis: DataAnalysis
+  dataAnalysis: DataAnalysis;
+  options: any;
 
   constructor(watchNode: any, dataAnalysis: DataAnalysis) {
     this.watchNode = watchNode;
     this.dataAnalysis = dataAnalysis;
+    this.options = options;
     this.init()
   }
 
