@@ -1,579 +1,671 @@
+
 <template>
-  <div class="cards-page">
-    <fixed-head :height="fix_head_height">
-      <van-notice-bar v-if="card_notice" left-icon="volume-o" mode="closeable" @close="hideNotice('card_notice')">
-        <a :href="card_notice.url" style="color: #ed6a0c;">{{ card_notice.title }}</a>
-      </van-notice-bar>
-      <van-nav-bar title="點數卡" :left-arrow="!$check_in_app" @click-left="clickLeft" />
-    </fixed-head>
-    <h3 class="seo hide">24H自動發卡，來源正規，品質保障</h3>
-    <div v-if="!is_lgn" id="gpt-card-idx2" class="card-banner" />
-    <div v-else-if="spring_2021 && user.count_end_time > option.server_time.time" class="spring-active">
-      <a class="nfs" href="https://m.8591.com.hk/notice/detail?id=1090" target="_blank">活動規則</a>
-      <count-down :now-time="option.server_time.time" :end-time="user.count_end_time" />
-    </div>
-    <div v-else id="gpt-card-idx" class="card-banner" />
-
-    <van-tabs v-model="tab" swipeable sticky animated :offset-top="sticky_top">
-      <van-tab title="港台點卡" name="hkntw">
-        <card-list :list="hkntw_list" @clickCard="onClickCard" />
-      </van-tab>
-      <van-tab title="海外點卡" name="oversea">
-        <card-list :list="oversea_list" @clickCard="onClickCard" />
-      </van-tab>
-      <van-tab title="大陸點卡" name="mainland">
-        <card-list :list="mainland_list" @clickCard="onClickCard" />
-      </van-tab>
-    </van-tabs>
-
-    <van-sku
-      ref="sku"
-      v-model="show_sku"
-      class="card-sku"
-      :sku="{
-        tree:[],
-        none_sku: true,
-        stock_num: card_stock
-      }"
-      :goods-id="card_id"
-      :hide-stock="true"
-      :reset-stepper-on-hide="true"
-      :quota="10"
-      :disable-stepper-input="true"
-      :close-on-click-overlay="true"
-      stepper-title="購買數量"
-      :custom-stepper-config="{
-        quotaText: stock_message,
-        handleOverLimit: data => overLimit(data)
-      }"
-      @stepper-change="changeStock"
-    >
-      <template #sku-header>
-        <div class="card-sku-header ml-lg mr-lg mt-lg van-hairline--bottom">
-          <com-image :src="card_img" :error-src="require('_IMG_/index/noimg.png')" />
-          <p class="card-sku-header__title fs-36 mt-lg"> {{ card_name }} </p>
-          <coupon-banner v-if="is_lgn" class="van-sku__goods-price" type="card" />
-
-          <p class="card-sku-header__price bfs mt-lg">
-            <del>原價：HK$ {{ card_price }}</del>
-          </p>
-          <div class="card-sku-header__sale bfs flex space-between align-end lineheight1">
-            <div>
-              {{ price_txt }}：
-              <span v-if="card_85_price" class="orange">
-                HK$ <span class="fs-50">{{ card_85_price }}</span>
-              </span>
-              <span v-else class="fs-30 orange">暫無庫存</span>
-              <span v-if="discountable" class="txt-tag red radius nfs ml-sm">
-                {{ card_discount }}<span>折</span>
-              </span>
+  <div v-if="initLoading" class="concern-loading normal-block">
+    <!-- <van-loading class="center-block txt-center" :size="'30px'" /> -->
+    <van-skeleton v-for="num in 3" :key="`skeleton_${num}`" title :row="3" />
+  </div>
+  <!-- 商品关注 -->
+  <div v-else class="goods-concerns">
+    <van-sticky>
+      <!-- 關注遊戲 -->
+      <div class="concern-game" :class="{'overflow-auto': focusGame.length === 3}">
+        <div class="container">
+          <div v-for="(item, i) in focusGame" :key="`concerns_${i}`" class="col" :class="{'col-on': focusActive == i}" @click="changeConcern(item, i)">
+            <h3 class="fs32 ellipsis-box ellipsis-one-clamp">
+              {{ item.ware_type_name }}
+            </h3>
+            <div class="flex-box section">
+              <p class="ellipsis-box ellipsis-one-clamp">
+                {{ item.game_name }}
+              </p>
+              <p>/ {{ item.server_name }}</p>
             </div>
-            <sale-count :cid="sel_card.i" />
           </div>
-        </div>
-      </template>
-      <div slot="sku-group" class="van-sku-group-container van-hairline--bottom">
-        <div class="van-sku-row">
-          <div>面額：</div>
-          <div class="denom-list flex flex-wrap space-between">
-            <template v-if="card_sku_list.length">
-              <span v-for="v in card_sku_list" :key="v.id" :class="['denom-list-item', {'active': sel_sku.id == v.id}]" @click="clickSku(v)">
-                {{ v.n }}
-              </span>
-              <span v-for="(v, i) in fill_sku_list" :key="i" class="denom-list-item empty" />
-            </template>
-            <span v-else class="denom-list-item">當前未配置面額 </span>
+
+          <div class="relative col" style="overflow: visible; top: -8px" @click="showConcernPop">
+            <h3>
+              <van-icon name="add-o" size="20" />
+            </h3>
+            <div class="section fs22">
+              <p>添加/編輯</p>
+            </div>
+            <div v-if="tooltip.concern" class="bw-tooltip bw-tooltip__top" style="width: 250px; top: -40px;" @click.prevent.stop="tooltip.concern = false">
+              添加您想尋找的商品，可在首頁直接展示唷~
+            </div>
           </div>
         </div>
       </div>
-      <template slot="sku-actions">
-        <div class="van-sku-actions">
-          <van-button v-if="!card_stock" disabled size="large">暫無庫存</van-button>
-          <template v-else>
-            <van-button v-ga-event="['商品相关','加入购物车','点卡频道页-加入购物车']" size="large" type="warning" @click="onBuyClicked('addCart')">加入購物車</van-button>
-            <van-button v-ga-event="['商品相关','购买','点卡频道页-立即购买']" size="large" type="danger" @click="onBuyClicked('')">立即購買</van-button>
-          </template>
+      <!-- 篩選 -->
+      <div class="concern-filter flex-box justify-between van-hairline--bottom">
+        <van-search
+          v-model="search.value"
+          :class="{'collaspe': search.collaspe}"
+          shape="round"
+          :show-action="search.action"
+          placeholder="請輸入關鍵字"
+          @search="onSearch"
+          @focus="onFocusSearch"
+          @cancel="onCancelSearch"
+        />
+        <van-dropdown-menu v-show="search.collaspe" active-color="#f60">
+          <van-dropdown-item v-if="prop_item_arr.length > 1" v-model="dropdown.prop_item" :options="prop_item_arr" @change="selectDropdown('prop_item')" />
+          <van-dropdown-item v-model="dropdown.sort" :options="sort_item" @change="selectDropdown('sort')" />
+        </van-dropdown-menu>
+      </div>
+    </van-sticky>
+
+    <div class="com-pd">
+      <!-- 列表 -->
+      <div v-if="lists.length" class="main-list">
+        <van-list
+          v-model="mall_list.loading"
+          class="concern-list"
+          :class="{'no-enough-data': lists.length < 10}"
+          loading-text="努力加載數據中..."
+          :offset="400"
+          :finished="finished"
+          :immediate-check="false"
+          @load="getListData"
+        >
+          <van-cell v-for="(v, i) in lists" :key="`mall_list_${i}`" class="ml-item">
+            <nuxt-link :to="getGameLink(v)">
+              <h3>
+                <i v-if="v.top_status" class="icon icon-rec" />
+                <i v-if="v.card_id" class="hkicon-image" />
+                <span class="mall-title" v-html="hightlight(v.ware_title)" />
+              </h3>
+              <p v-if="v.include_key" class="has-keyword">
+                商品內容含有<span class="red">“{{ search.value }}”</span>
+              </p>
+              <div class="item-info">
+                <div>
+                  <span>
+                    <template v-if="active_ware_type === ''">
+                      {{ v.ware_type }}
+                    </template>
+                    <template v-if="v.sell_count > 0">
+                      <template v-if="active_ware_type === ''">
+                        -
+                      </template>
+                      已售{{ v.sell_count }}件
+                    </template>
+                  </span>
+                </div>
+                <div class="price mfs">
+                  <span class="mx1fs">{{ number_format(v.ware_price) }}</span>元
+                </div>
+              </div>
+            </nuxt-link>
+          </van-cell>
+          <div v-if="finished" class="van-list__finished-text">
+            <p class="grey-light">没有更多商品唷~</p>
+          </div>
+        </van-list>
+      </div>
+      <div v-else class="van-list__finished-text">
+        <div v-if="mall_list.loading" class="normal-block">
+          <van-loading class="center-block txt-center" :size="'30px'" />
         </div>
-      </template>
-    </van-sku>
-    <fixed-foot :height="$check_in_app ? .6 : 1.6">
-      <buy-user :class="{'hide-slide':!show_buy_user}">
-        <div slot="hide-txt" class="flex align-center" @click="show_buy_user = false;">
-          收起<span class="hkicon-arr-down ml-xs" />
+        <div v-else class="nodata">
+          <img class="center-block" src="~/assets/images/public/nogame.png">
+          <p class="mt20">很抱歉，無法找到相關商品</p>
+          <!-- <p class="blue-normal" @click="showFeedback">沒找到商品？點我反饋</p> -->
         </div>
-      </buy-user>
-      <tab-bar v-if="!$check_in_app" />
-    </fixed-foot>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
-import "_SCSS_/cards/index.scss";
-import { mapState, mapMutations, mapActions, mapGetters } from "vuex";
-import { number_format } from "_UTIL_/helper";
-import noimg from "_IMG_/cards/card_noimg2.png";
-import tabBar from "_COMP_/public/tabBar";
-import couponBanner from "_COMP_/public/couponBanner";
-import countDown from "_COMP_/plugin/countDown";
-import fixedHead from "_COMP_/public/fixedHead";
-import fixedFoot from "_COMP_/public/fixedFoot";
-import buyUser from "_COMP_/card/buyUser";
-import saleCount from "_COMP_/card/saleCount";
-import cardList from "_COMP_/card/cardList";
-import loginPop from "_MIX_/loginPop";
+import { mapState, mapMutations } from 'vuex';
+import { number_format, getScrollTop, setScrollTop } from '~/utils/utils';
+import debounce from 'lodash.debounce';
+import listFeedback from '~/components/mall/listFeedback';
+
+import mxMall from '~/mixin/mxMall';
+import historyBrowse from '~/mixin/historyBrowse';
+import tooltip from '~/mixin/tooltip';
 
 export default {
-  mixins: [loginPop],
-  async asyncData({ store, query, params, error }) {
-    await store.dispatch('transferData/getCardData');
-    const { t = 'hkntw' } = query;
-    const { id = '' } = params;
-    let seo_title = '點數卡-24H自動發卡、100%品質保證-香港8591';
-    let seo_description = '8591點數卡提供港臺點卡、大陸點卡、海外點卡；Mycard、Gash、貝殼幣、GO卡、iTunes禮品卡、google play禮品卡等。買點數卡，上香港8591';
-    let og_image = '';
-    const og_description = '24H自動發卡，100%品質保障，首單滿99减30';
-
-    if (id) {
-      const card_data = store.state.transferData.card_data[`_${id}`];
-      if (!card_data) {
-        return error({ tle: '點數卡ID錯誤，請重試', statusCode: 200 });
-      }
-      const card_name = card_data.n;
-
-      seo_title = `${card_name}-香港8591`;
-      seo_description = `${card_name}限時優惠，24H自動發卡，100%品質保障，支援轉數快付款。買${card_name}點數卡，上香港8591，首單滿99減20 `;
-      og_image = card_data.c;
-    }
-
-    let hkntw_list = { };
-    let mainland_list = { };
-    let oversea_list = {};
-
-    for (const i in store.state.transferData.card_data) {
-      const v = store.state.transferData.card_data[i];
-      switch (v.t) {
-        case '港台點卡':
-          hkntw_list[i] = v;
-          break;
-        case '大陸點卡':
-          mainland_list[i] = v;
-          break;
-        case '海外點卡':
-          oversea_list[i] = v;
-          break;
-      }
-    }
-    if (!Object.keys(hkntw_list).length) {
-      hkntw_list = '';
-    }
-    if (!Object.keys(mainland_list).length) {
-      mainland_list = '';
-    }
-    if (!Object.keys(oversea_list).length) {
-      oversea_list = '';
-    }
-
-    return {
-      hkntw_list,
-      mainland_list,
-      oversea_list,
-      show_card_id: id,
-      tab: t,
-      seo_title,
-      seo_description,
-      og_image,
-      og_description
-    };
-  },
-  components: { tabBar, couponBanner, fixedHead, fixedFoot, countDown, buyUser, saleCount, cardList },
-  head() {
-    const meta = [
-      { hid: 'description', name: 'description', content: this.seo_description },
-      { hid: 'og:description', property: "og:description", content: this.og_description }
-    ];
-    if (this.og_image) {
-      meta.push(
-        { hid: 'og:image', property: "og:image", content: this.og_image },
-        { hid: 'og:image:width', property: "og:image:width", content: 600 },
-        { hid: 'og:image:height', property: "og:image:height", content: 314 }
-      );
-    }
-    return {
-      title: this.seo_title,
-      meta,
-      link: [
-        { hid: 'amphtml', rel: 'amphtml', href: `https://m${this.$config.domain}/amp/cards` }
-      ]
-    };
-  },
+  mixins: [mxMall, historyBrowse, tooltip],
+  components: { listFeedback },
   data() {
     return {
-      noimg,
-      submitting: false,
-      loading: false,
-      show_sku: false,
-      sel_card: '',
-      sel_sku: '',
-      sel_num: '',
-      show_buy_user: true,
+      search: {
+        value: '',
+        action: false,
+        collaspe: true
+      },
+      dropdown: {
+        prop_item: '',
+        sort: ''
+      },
+      mall_list: {
+        loading: false
+      },
+      concern_pop: false,
+      show_select: false,
+      activeName: '',
+      initLoading: true,
+      game_list: null,
+      tree: { sid: -1, tid: -1 },
+      add_focus: false,
 
-      card_id: '',
-      card_img: '',
-      card_sku_list: [],
-      fill_sku_list: [],
-      card_name: '',
-      card_stock: 0,
-      card_price: '',
-      card_85_price: '',
-      card_discount: '',
-      discountable: 0,
-      price_txt: '現價',
-
-      coupon_list: [],
-
-      group_buy_price: 0,
-      img_url: this.$config.img_url
+      feedback: {
+        show: false
+      },
+      tooltip: {
+        concern: false
+      }
     };
   },
   computed: {
-    fix_head_height() {
-      let h = 0.8;
-      if (this.card_notice) {
-        h += 0.6;
+    // ...mapState(['mall', 'focusGame', 'focusData', 'editFocus', 'publish']),
+    focusActive() {
+      return this.focusData.focusActive;
+    },
+    active_ware_type() {
+      return this.focusGame[this.focusActive].ware_type;
+    },
+    gcTop() {
+      return this.focusData.gcTop;
+    },
+    docTop() {
+      return this.focusData.docTop;
+    },
+    lists() {
+      return this.focusData[`list_${this.focusActive}`] || [];
+    },
+    editList() {
+      return this.editFocus.list;
+    },
+    // 是否沒有商品了
+    finished() {
+      return this.focusData[`finished_${this.focusActive}`];
+    },
+    // 品項
+    prop_item_arr() {
+      if (!this.focusGame[this.focusActive].prop_item) {
+        return [];
       }
-      return h;
+      let arr = [{
+        text: '全品項',
+        value: '0'
+      }];
+      arr = arr.concat(this.focusGame[this.focusActive].prop_item.map(v => {
+        return { text: v.prop_item, value: v.id + '' };
+      }));
+      return arr;
     },
-    spring_2021() {
-      return this.user.user_info.spring_2021;
-    },
-    card_notice() {
-      return this.transferData.notification.card_notice;
-    },
-    has_card_ad() {
-      return this.transferData.has_card_ad;
-    },
-    card_data() {
-      return this.transferData.card_data;
-    },
-    card_discount_switch() {
-      return this.option.site.card_discount_switch ? this.option.site.card_discount_switch * 1 : 0;
-    },
-    stock_message() {
-      if (this.card_stock > 5) {
-        return '';
+    // 排序
+    sort_item() {
+      let sort_item = [
+        { text: '預設排序', value: '' },
+        { text: '最新刊登', value: 'time_sort|1' },
+        { text: '銷量優先', value: 'sell_sort|1' },
+        { text: '價格低→高', value: 'price_sort|1' },
+        { text: '價格高→低', value: 'price_sort|2' }
+      ];
+      // 遊戲幣有幣值排序
+      if (this.active_ware_type === 0) {
+        sort_item = sort_item.concat([
+          { text: '幣值低→高', value: 'ratios_sort|1' },
+          { text: '幣值高→低', value: 'ratios_sort|2' }
+        ]);
       }
-      if (this.loading) {
-        return '檢測庫存...';
+
+      return sort_item;
+    },
+    // 商品類別集合
+    game_type() {
+      const { type } = this.editFocus;
+      let arr = [{
+        id: '',
+        text: '全商品類別'
+      }];
+      if (type === 'edit') {
+        arr = arr.concat(this.editFocus.ware_type_item.map(v => {
+          v.text = v.name;
+          return v;
+        }));
+      } else {
+        arr = arr.concat(this.publish.game_type);
       }
-      if (this.card_stock > 0) {
-        return '庫存緊張';
+      return arr;
+    },
+    // 伺服器集合
+    server_item() {
+      const { game_id } = this.editFocus;
+      const game = this.game_list['_' + game_id];
+      if (game) {
+        const arr = [{
+          sid: 0,
+          text: '全伺服器',
+          children: [...this.game_type]
+        }];
+        for (const k in game[3]) {
+          const sid = k.replace('_', '') * 1;
+          arr.push({
+            sid,
+            text: game[3][k],
+            children: [...this.game_type]
+          });
+        }
+        return arr;
       }
-      if (this.card_85_price) {
-        return '庫存不足';
-      }
-      return '暫無庫存';
+      return [];
+    },
+    new_focus_game() {
+      const { game_id } = this.editFocus;
+      return game_id ? arrGameList['_' + game_id][0] : '';
     }
   },
+
   methods: {
     number_format,
-    clickLeft() {
-      this.$goBack();
+    setScrollTop,
+    // ...mapMutations({
+    //   updateEditList: 'updateEditList',
+    //   setEditGame: 'setEditGame',
+    //   updateFocusParams: 'updateFocusParams',
+    //   updateListPos: 'updateListPos',
+    //   updateDataParams: 'updateDataParams',
+    //   updateEditParams: 'updateEditParams',
+    //   resetEditParams: 'resetEditParams',
+    //   updateFocusOrNot: 'updateFocusOrNot'
+    // }),
+    setGameList() {
+      if (typeof arrGameList != 'undefined') {
+        this.game_list = arrGameList;
+      }
     },
-    getSelVal() {
-      const data = {
-        card_id: this.sel_card.i,
-        denom_id: this.sel_sku.id,
-        quantity: this.sel_num
-      };
-      this.loading = true;
-      this.$api.get_denom_price(data).then(res => {
-        this.loading = false;
-        this.$toast.clear();
-        if (res.status) {
-          const { sale_price, discount, discountable, stock, group_buy_price } = res.data;
-          this.card_stock = stock;
-          this.card_85_price = sale_price;
-          this.discountable = discountable;
-          this.card_discount = (discount * 100 + '').replace('0', '');
-          this.group_buy_price = group_buy_price;// 拼團價格
-          this.price_txt = '現價';
-          if (this.discountable) {
-            this.price_txt = '新人價';
-          }
-
-          if (this.card_discount_switch && !discountable && this.card_price > sale_price) {
-            const d = Math.ceil(parseInt((sale_price / this.card_price) * 1000) / 10);
-            if (d < 100) {
-              this.discountable = 1;
-              this.card_discount = (d + '').replace('0', '');
-            }
-          }
+    // 绑定scroll
+    bindScroll(type) {
+      if (process.client && this.$route.name === 'index') {
+        this.handleIndexScroll();
+        if (type === 'remove') {
+          window.removeEventListener('scroll', debounce(this.handleIndexScroll, 75));
         } else {
-          this.card_stock = 0;
-          this.card_85_price = 0;
-          this.discountable = 0;
+          window.addEventListener('scroll', debounce(this.handleIndexScroll, 75));
         }
-        this.show_sku = true;
-      });
+      }
     },
-    onClickCard(data) {
-      const { k: cid, v: val } = data;
-      this.clickCard(cid, val);
+    // 监听首页滚动
+    handleIndexScroll() {
+      const goodsConcern = document.querySelector('.goods-concerns');
+      if (goodsConcern) {
+        const gcTop = goodsConcern.offsetTop;
+        const docTop = getScrollTop();
+        this.updateDataParams({ key: 'gcTop', value: gcTop });
+        this.updateDataParams({ key: 'docTop', value: docTop });
+        this.updateDataParams({ index: this.focusActive, key: 'position', value: docTop });
+        if (gcTop != 0 && gcTop <= docTop) {
+          this.updateFocusOrNot(true);
+        }
+      }
     },
-    clickCard(cid, val) {
-      const denom_arr = []; // 面額 sku 數組
-      const v = { ...val };
-
-      v.i = cid.replace('_', '');
-      if (v.d.length === 0) {
-        // 空數據
+    // 解析请求参数
+    generateFocusParams() {
+      if (this.editList.length > 0) {
+        this.initLoading = false;
+        setTimeout(() => {
+          const index = this.focusActive;
+          const pos = this.focusData[`position_${index}`];
+          this.updateFilterItem();
+          this.setScrollTop(pos);
+        }, 100);
+        return;
+      }
+      const params = {};
+      if (this.historyBrowse.length > 0) {
+        const firstData = this.historyBrowse[0];
+        params.game_id = firstData.id;
+        params.server_id = firstData.sid;
+        params.ware_type = firstData.tid;
       } else {
-        for (const i in v.d) {
-          denom_arr.push({
-            card_name: v.n,
-            ...v.d[i],
-            id: i.replace('_', '')
+        // 没有最近浏览记录
+        params.game_id = '';
+        params.server_id = -1;
+        params.ware_type = '';
+        params.type = 'reload';
+      }
+      this.getMyFocusGame(params);
+    },
+    // 获取关注的游戏
+    getMyFocusGame(params) {
+      this.$store.dispatch('fetchMyFocus', params).then(res => {
+        const { code } = res;
+        this.initLoading = false;
+        this.setGameList();
+        if (code === 200) {
+          this.updateFilterItem();
+          this.$nextTick(() => {
+            this.bindScroll();
           });
+          this.getListData();
+          this.showTooltip();
         }
-      }
-
-      this.sel_card = v;
-      this.sel_sku = denom_arr[0] ?? '';
-      this.sel_num = 1;
-
-      this.card_id = v.i;
-      this.card_img = v.c ? `${v.c}!t314x192.jpg` : '';
-      this.card_sku_list = denom_arr;
-      this.fill_sku_list = new Array(4 - denom_arr.length % 4).fill(1);
-
-      this.card_name = `${v.n} ${this.sel_sku.n || ''}`;
-
-      this.card_price = this.sel_sku.p;
-      this.$toast.loading({
-        duration: 0,
-        forbidClick: true,
-        loadingType: 'spinner',
-        message: '正在加載...'
       });
-      this.getSelVal();
     },
-    changeStock(v) {
-      if (!this.submitting && this.show_sku) {
-        this.sel_num = v;
-        this.getSelVal();
+    showTooltip() {
+      // 提示关注
+      if (!this.getTipStorage('concern') && this.focusGame.length < 3) {
+        this.tooltip.concern = 1;
+        this.setTipStorage('concern');
       }
     },
-    overLimit(data) {
-      const { action } = data;
-
-      if (action === 'minus') {
-        this.$toast('至少選擇一件商品');
-      } else if (action === 'plus') {
-        if (this.sel_num == this.card_stock) {
-          this.$toast('已經沒庫存了~');
-        } else {
-          this.$toast('最多一次購買10件喔');
-        }
-      }
-    },
-    clickSku(v) {
-      if (v.id == this.sel_sku.id) return;
-      this.sel_sku = v;
-      this.card_stock = 0; // 設置步進器值為1
-      this.sel_num = 1;
-      this.card_price = v.p;
-      this.card_name = `${v.card_name} ${v.n}`;
-      this.getSelVal();
-    },
-    onBuyClicked(type) {
-      if (!this.isLgn()) {
-        return;
-      }
-      const data = {
-        card_id: this.sel_card.i,
-        denom_id: this.sel_sku.id,
-        quantity: this.sel_num
+    // 获取关注游戏的数据
+    getListData(type) {
+      const focusActive = this.focusActive;
+      const { game_id, server_id, ware_type, last_keywords, last_prop_item, last_sort } = this.focusGame[focusActive];
+      const count_rows = this.focusData[`count_rows_${focusActive}`];
+      const params = {
+        game_id,
+        server_id,
+        count_rows,
+        keyword: last_keywords,
+        item_id: last_prop_item,
+        index: focusActive
       };
-
-      if (data.card_id == 53 || data.card_id == 56) {
-        this.buyCardRiskPop(type, data);
-        return;
+      // 商品類別
+      if (ware_type !== '') {
+        params.ware_type = ware_type;
       }
-
-      if (this.submitting) {
-        return;
+      // 商品排序
+      if (last_sort) {
+        const sort_item = last_sort.split('|');
+        params[sort_item[0]] = sort_item[1];
       }
-      if (data.card_id == 2 && !this.$localstorage.get('pop_mycard')) {
-        this.$localstorage.set('pop_mycard', 1);
-        this.$dialog.alert({
-          title: "溫馨提示",
-          message: '【港版Mycard】官方會員帳號儲值服務臨時維護中，目前只能儲值到遊戲內（【台版MyCard】無限制），請確認後再購買。',
-          showCancelButton: true,
-          confirmButtonText: '確認購買',
-          cancelButtonText: '我再想想'
-        }).then(() => {
-          if (this.submitting) {
-            return;
+      if (type === 'reload') {
+        params.type = type;
+        params.count_rows = 0;
+      }
+      this.$store.dispatch('fetchFocusData', params).then(res => {
+        this.mall_list.loading = false;
+        const { code } = res;
+        if (code === 200) {
+          // 数据已加载完啦
+          this.feedback = { ...params, from: 2, show: false };
+          if (this.lists.length === res.data.total_rows) {
+            this.updateDataParams({ index: focusActive, key: 'finished', value: true });
+            this.$gtmClickEvent(['商品列表页', '商品过少反馈', '反馈入口露出']);
           }
-          this.submitting = true;
-          if (type === 'group') {
-            this.cardGroup(data);
-          } else if (type == 'addCart') {
-            this.addCart(data);
+          if (!res.data.total_rows) {
+            this.$gtmClickEvent(['商品列表页', '商品过少反馈', '反馈入口露出']);
+          }
+          if (type === 'reload') {
+            this.scrollToConcern();
+          }
+        }
+      });
+    },
+    // 显示编辑侧边栏
+    showConcernPop() {
+      this.tooltip.concern = false;
+      this.concern_pop = true;
+      this.$gtmClickEvent(['首页', '商品关注', '添加和编辑']);
+    },
+    // 滑动定位到商品关注
+    scrollToConcern() {
+      this.setScrollTop(this.gcTop);
+    },
+    //
+    scrollToLeft() {
+      const index = this.focusActive;
+      const offsetLeft = document.querySelectorAll('.col')[index].offsetLeft;
+      const cg = document.querySelectorAll('.concern-game')[0];
+      cg.scrollLeft = offsetLeft;
+    },
+    // 更新關鍵字搜尋，品項，排序
+    updateFilterItem() {
+      const { last_keywords, last_prop_item, last_sort } = this.focusGame[this.focusActive];
+      this.search.value = last_keywords;
+      this.dropdown.prop_item = last_prop_item;
+      this.dropdown.sort = last_sort;
+    },
+    // 切换关注游戏
+    changeConcern(item, i) {
+      const prev = this.focusActive;
+      // 保存相对应的滚动条位置
+      this.updateListPos({ index: prev, position: this.docTop });
+      this.updateDataParams({ key: 'focusActive', value: i });
+      this.updateFilterItem();
+      this.scrollToLeft();
+      if (this.lists.length > 0) {
+        // 回显上一次浏览位置
+        const pos = this.focusData[`position_${0}`];
+        this.$nextTick(() => {
+          if (pos > this.gcTop) {
+            this.setScrollTop(pos);
           } else {
-            this.doBuy(data);
+            this.scrollToConcern();
           }
-        }).catch(() => {});
+        });
+      } else {
+        this.getListData('reload');
+      }
+    },
+    toggleSearch(action, collapse) {
+      // 隐藏搜寻的取消按钮
+      this.search.action = action;
+      // 是否折叠搜索框
+      this.search.collaspe = collapse;
+    },
+    hightlight(title) {
+      return this.hightlightKeyword(title, this.search.value);
+    },
+    // 搜索
+    onSearch(val) {
+      const index = this.focusActive;
+      const { id } = this.focusGame[index];
+      this.$store.dispatch('fetchEditFocus', { id, last_keywords: val }).then(res => {
+        const { code, message } = res;
+        if (code === 200) {
+          this.onCancelSearch();
+          this.updateFocusParams({ index, key: 'last_keywords', value: val });
+          this.getListData('reload');
+        } else {
+          this.$toast(message);
+        }
+      });
+    },
+    // 搜索框获取焦点
+    onFocusSearch() {
+      this.toggleSearch(true, false);
+    },
+    // 取消搜寻
+    onCancelSearch() {
+      this.toggleSearch(false, true);
+    },
+    // 展开编辑关注
+    collapseChange(activeNames) {
+      if (!activeNames) {
         return;
+      }
+      const { game_id, server_id, ware_type, ware_type_item } = this.focusGame[activeNames - 1];
+      this.setEditGame({ game_id, ware_type_item });
+
+      // 匹配伺服器
+      this.tree.sid = this.server_item.findIndex(item => item.sid == server_id);
+      // 匹配類別
+      this.tree.tid = ware_type;
+    },
+    // 選中品項或者排序
+    selectDropdown(type) {
+      const index = this.focusActive;
+      const val = this.dropdown[type];
+      const prop = `last_${type}`;
+      const { id } = this.focusGame[index];
+      const params = { id };
+      params[prop] = val;
+      this.$store.dispatch('fetchEditFocus', params).then(res => {
+        const { code } = res;
+        if (code === 200) {
+          this.updateFocusParams({ index, key: prop, value: val });
+          this.getListData('reload');
+        }
+      });
+    },
+    // 显示tree select
+    showTreeSelect(type) {
+      const { game_id } = this.editFocus;
+      if (!game_id) {
+        this.$toast('請先選擇要關注的遊戲唷');
+        return;
+      }
+      this.show_select = true;
+    },
+    // 选择游戏 type: edit 编辑，add 添加
+    clickGame(type) {
+      const query = { focus: 1, editIndex: this.activeName, editType: type };
+      this.$router.push({ path: '/game/hot', query });
+    },
+    // 選擇伺服器和類別
+    treeClick(type, payload) {
+      const clickType = this.editFocus.type;
+      const index = this.activeName - 1;
+      switch (type) {
+        case 'sid':
+          const { sid, text } = this.server_item[payload];
+          this.tree.sid = payload;
+          // 新增編輯
+          this.updateEditList({ type, index, clickType, server_id: sid, server_name: text });
+          break;
+
+        case 'tid':
+          this.tree.tid = payload.id;
+          this.updateEditList({ type, index, clickType, ware_type: payload.id, ware_type_name: payload.text });
+          this.show_select = false;
+          break;
+      }
+    },
+    showAddFocus() {
+      this.add_focus = true;
+      this.resetEditParams();
+      this.$gtmClickEvent(['首页', '商品关注', '添加商品关注']);
+    },
+    // 编辑及新增關注
+    saveEditFocus() {
+      // 编辑
+      const index = this.activeName - 1;
+      const { id } = this.focusGame[index];
+      const prev_server_id = this.focusGame[index].server_id;
+      const { game_id, server_id, ware_type } = this.editList[index];
+
+      const params = {
+        id,
+        game_id,
+        server_id,
+        ware_type
+      };
+      if (prev_server_id !== server_id) {
+        params.last_prop_item = '';
       }
 
-      if (type === 'group') {
-        this.cardGroup(data);
-      } else if (type == 'addCart') {
-        this.addCart(data);
-      } else {
-        this.doBuy(data);
-      }
-    },
-    buyCardRiskPop(type, data) {
-      this.$dialog.alert({
-        message: '因Google更新使用條款，玩家必須要用"當地IP+當地帳號”方可充值<br>購買前請仔細閱讀相關說明',
-        showCancelButton: true,
-        confirmButtonText: '已了解，繼續購買',
-        cancelButtonText: '詳細了解'
-      }).then(() => {
-        if (this.submitting) {
-          return;
-        }
-        if (type === 'group') {
-          this.cardGroup(data);
-        } else if (type == 'addCart') {
-          this.addCart(data);
-        } else {
-          this.doBuy(data);
-        }
-      }).catch(() => {
-        location.href = 'https://www.8591.com.hk/notice/detail?id=27&gopc=1';
-      });
-    },
-    // 購買點卡
-    doBuy({ denom_id, quantity }) {
-      this.submitting = 1;
-      const data = JSON.stringify([{ denom_id, quantity }]);
-      this.$api.generate_order_goods(data).then(res => {
-        this.submitting = 0;
-        if (res.status) {
-          const i = [];
-          for (const v of res.data) {
-            i.push(`${v.id}_${v.quantity}_c`);
-          }
-          this.$router.push({ path: '/pay', query: { i: i.join(',') } });
-        } else {
-          this.$toast(res.message);
+      this.$store.dispatch('fetchEditFocus', params).then(res => {
+        const { code, message } = res;
+        this.$toast(message);
+        if (code === 200) {
+          window.location.reload();
+          // this.updateDataParams({ index, key: 'finished', value: false })
+          // this.activeName = ''
+          // this.getMyFocusGame({ game_id: 0, server_id:'', ware_type: '', type: 'reload' })
         }
       });
     },
-    addCart({ denom_id, quantity }) {
-      const data = {
-        goods_id: denom_id,
-        type: 'denom',
-        quantity
-      };
-      this.submitting = 1;
-      this.$api.add_cart(data).then(res => {
-        this.submitting = 0;
-        if (res.status) {
-          this.$toast('商品已成功加入購物車');
-          this.$cfgFn.getUserCenterCount();
-        } else {
-          this.$toast(res.message);
-        }
-      });
-    },
-    sortCoupon(a, b) {
-      return b.reduction_amount - a.reduction_amount;
-    },
-    getCoupon() {
-      if (!this.is_lgn) {
+    // 删除标注
+    deleteFocus() {
+      // 如果只有一天关注不允许删除
+      if (this.focusGame.length === 1) {
+        this.$toast('您只有最後一條關注，不能刪除唷');
         return;
       }
-      this.$api.get_coupon({ type: 0 }).then(res => {
-        if (res.status) {
-          const coupon = res.data.coupon || [];
-          const coupon_list = coupon.filter(v => {
-            if (v.allow_goodsType != '非點數卡') {
-              return true;
+      const index = this.activeName - 1;
+      const { id } = this.focusGame[index];
+      const params = { id };
+      // 確認是否刪除
+      this.$dialog
+        .confirm({
+          className: 'txt-center',
+          message: '您確認要刪除此關注嗎？',
+          cancelButtonText: '確認',
+          confirmButtonText: '我再想想'
+        })
+        .then(() => {
+          console.log('PEACE AND LOVE');
+        })
+        .catch(() => {
+          this.$store.dispatch('fetchDelFocus', params).then(res => {
+            const { code, message } = res;
+            this.$toast(message);
+            if (code === 200) {
+              window.location.reload();
+              // this.updateDataParams({ index, key: 'finished', value: false })
+              // this.activeName = ''
+              // this.getMyFocusGame({ game_id: 0, server_id: '', ware_type: '', type: 'reload' })
             }
           });
-          coupon_list.sort(this.sortCoupon);
-          this.coupon_list = coupon_list;
-        }
-      });
+        });
     },
-    cardAdReady() {
-      if (this.has_card_ad) {
-        if (!this.is_lgn) {
-          const iframe = document.querySelector('#gpt-card-idx2 iframe');
-          const el = iframe.contentDocument.querySelector('#google_image_div a');
-          iframe.parentNode.remove();
-          document.querySelector('#gpt-card-idx2').appendChild(el);
-        } else {
-          const iframe = document.querySelector('#gpt-card-idx iframe');
-          const el = iframe.contentDocument.querySelector('#google_image_div a');
-          iframe.parentNode.remove();
-          document.querySelector('#gpt-card-idx').appendChild(el);
-        }
+    saveNewFocus() {
+      const { game_id, server_id, ware_type } = this.editFocus;
+      if (!game_id) {
+        this.$toast('請確認您是否已選擇需要關注的遊戲');
+        return;
       }
-    },
-    initGoogleAd() {
-      googletag.cmd.push(() => {
-        googletag.pubads().refresh();
-      });
-    },
-    // 拼团购买
-    cardGroup(params) {
-      this.submitting = 1;
-      this.$api.card_group(params).then(res => {
-        this.submitting = 0;
-        if (res.status) {
-          const { id, discount, goods_title } = res.data;
-          this.$router.push({ path: '/active/2021/grouplist', query: { group_id: id, save_money: discount, goods_title } });
-        } else {
-          this.$toast(res.message);
+      this.$store.dispatch('fetchAddFocus', { game_id, server_id, ware_type }).then(res => {
+        const { code, message } = res;
+        this.$toast(message);
+        if (code === 200) {
+          window.location.reload();
+          // this.add_focus = false
+          // this.concern_pop = false
+          // this.getMyFocusGame({ game_id: 0, server_id: -1, ware_type: '', type: 'reload' })
         }
       });
+    },
+    showFeedback() {
+      this.$gtmClickEvent(['商品列表页', '商品过少反馈', '点击反馈']);
+      this.feedback = {
+        ...this.feedback,
+        show: true
+      };
+    },
+    hideFeedback() {
+      this.feedback = {
+        ...this.feedback,
+        show: false
+      };
     }
-  },
-  beforeMount() {
-    this.setAdLoad({ name: 'has_card_ad', val: false });
   },
   mounted() {
-    this.getCoupon();
-    this.setTabBar('card');
-    if (this.show_card_id) {
-      this.clickCard(this.show_card_id, this.card_data[`_${this.show_card_id}`]);
-    }
-    // 获取是否有机会
-    if (this.is_lgn) {
-      this.getUserAllInfo().then(() => {
-        this.initGoogleAd();
-      });
-    } else {
-      this.initGoogleAd();
-    }
+    this.setGameList();
+    this.loadHistory();
+    this.generateFocusParams();
   },
-  watch: {
-    is_lgn() {
-      if (this.is_lgn) {
-        this.initGoogleAd();
+  beforeDestroy() {
+    this.bindScroll('remove');
+    this.resetEditParams();
+  },
+  beforeMount() {
+    const { game_id, index, type } = this.editFocus;
+    // 添加關注遊戲，則展開關注
+    if (game_id) {
+      this.concern_pop = true;
+      // 是添加
+      if (type === 'add') {
+        this.add_focus = true;
+      } else {
+        this.activeName = index;
       }
-    },
-    has_card_ad() {
-      this.cardAdReady();
-    },
-    tab() {
-      this.$router.push(`/cards?t=${this.tab}`);
+
+      this.$store.dispatch('publish/fetchGameType', { game_id }).then(res => {
+        this.show_select = true;
+      });
     }
   }
 };
 </script>
+
+

@@ -30,7 +30,7 @@ export default class LifeCycleAnalysis {
   cycleBodyMap: Map<string, CycleVariable> = new Map();
   options: any;
 
-  constructor(options) {
+  constructor(options:any) {
     this.options = options;
   }
 

@@ -13,7 +13,7 @@ export default class ComputedRender{
   computeBodyMap: Map<string, FunctionVariable> = new Map();
   options: any;
 
-  constructor(computeNode:Array<any>,options) {
+  constructor(computeNode:Array<any>,options:any) {
     this.computeNode = computeNode;
     this.options = options;
     this.init()
@@ -34,7 +34,7 @@ export default class ComputedRender{
     })
   }
 
-  hasReactiveKey(key:string) {
+  hasComputedKey(key:string) {
     return this.computedKey.has(key)
   }
 

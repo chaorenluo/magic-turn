@@ -10,8 +10,9 @@ import ComputedRender from './ComputedRender';
 import MethodsRender from './MethodsRender'
 import LifeCycleRender from './LifeCycleRender'
 import PropsRender from './PropsRender'
-import importRender from './importRender'
+import ImportRender from './ImportRender'
 import WatchRender from './WatchRender'
+import MixinRender from './MixinRender'
 const { parse } = parser;
 
 
@@ -21,22 +22,10 @@ enum optionsApi {
   computed = 'computed',
   methods = 'methods',
   props = 'props',
-  watch = 'watch'
+  watch = 'watch',
+  mixins = 'mixins'
 }
 
-
-const loopProperty = (path) => {
-  if (!path.node.property) {
-    return path.node.type
-  }
- return loopProperty(path.context.parentPath)
-}
-
-const createSetupState = () => {
-  importRender.addVueApi('getCurrentInstance')
-  let node = t.memberExpression(t.callExpression(t.identifier('getCurrentInstance'),[]), t.identifier('setupState'));
-  return node
-}
 
 
 const scriptRender = async (code: string,options) => {
@@ -47,16 +36,52 @@ const scriptRender = async (code: string,options) => {
   let lifeCycleRender: LifeCycleRender = new LifeCycleRender(options)
   let propsRender: PropsRender;
   let watchRender: WatchRender;
+  let mixinRender: MixinRender;
+  let importRender = ImportRender();
 
+
+  const loopProperty = (path) => {
+    if (!path.node.property) {
+      return path.node.type
+    }
+  return loopProperty(path.context.parentPath)
+  }
+
+  const createSetupState = () => {
+    importRender.addVueApi('getCurrentInstance')
+    let node = t.memberExpression(t.callExpression(t.identifier('getCurrentInstance'),[]), t.identifier('setupState'));
+    return node
+  }
+
+  const checkMixinAttribute = () => {
+    mixinRender.nodeList(node => {
+
+    })
+  }
 
   const ast = parse(code, {
     sourceType: 'module'
   })
+  // 转义mixin
+  traverse.default(ast, {
+    ImportDeclaration(path) {
+      importRender.addImportGlobal(path.node)
+    },
+   ObjectProperty(path) {
+      const properties = path.node.value.properties;
+      const nodeName = path.node.key.name;
+      if (optionsApi.mixins === nodeName) {
+        const elements = path.node.value.elements.map(item => item.name)
+        mixinRender = new MixinRender(elements, importRender.importGlobal, options)
+      }
+    }
+  })
+  mixinRender && await  mixinRender.initMixin()
   traverse.default(ast, {
     ObjectMethod(path) {
       const nodeName = path.node.key.name;
       if (nodeName === optionsApi.data) {
-        dataRender = new DataRender(path.node.body.body)
+        dataRender = new DataRender(path.node.body.body,options)
       } else if (LifeCycleRender.isCycle(nodeName)) {
         lifeCycleRender.init(path.node)
       }
@@ -82,9 +107,6 @@ const scriptRender = async (code: string,options) => {
           break;
       }
     },
-    ImportDeclaration(path) {
-      importRender.addImportGlobal(path.node)
-    },
     MemberExpression(path) {
       if (path.node.object.type === 'ThisExpression') {
         const property = path.node.property;
@@ -92,10 +114,16 @@ const scriptRender = async (code: string,options) => {
         let newNode = path.node;
         if (property.type === 'TemplateLiteral'){
           let type = loopProperty(path)
-          newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier('state')
+          newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier(options.dataName)
         }else if (dataRender && dataRender?.hasReactiveKey(name)) {
-          newNode.object = t.identifier('state')
-        } else if (computedRender && computedRender?.hasReactiveKey(name)) {
+          newNode.object = t.identifier(options.dataName)
+        } else if (mixinRender && mixinRender.reactiveMap.has(name) ) {
+          newNode.object = t.identifier(mixinRender.reactiveMap.get(name))
+        } else if (mixinRender && mixinRender.computeMap.has(name)) {
+          newNode.object = newNode.property;
+          newNode.property = t.identifier('value')
+        }
+        else if (computedRender && computedRender?.hasComputedKey(name)) {
           newNode.object = newNode.property;
           newNode.property = t.identifier('value')
         } else if (propsRender && propsRender?.hasPropsKey(name)) {
@@ -129,11 +157,9 @@ const scriptRender = async (code: string,options) => {
     }
 
   });
-  //  let code =  await generate.default(ast);
-  // console.log(generate.default(ast).code)
-  //  console.log(code)
   let newCode = '';
-  newCode += importRender ?await importRender.render() : '';
+  newCode += importRender ? await importRender.render() : '';
+  newCode += mixinRender ? mixinRender.render() : '';
   newCode += propsRender ? await propsRender.render() : '';
   newCode += dataRender ? await dataRender.render() : '';
   newCode += computedRender ? await computedRender.render() : '';
@@ -142,12 +168,14 @@ const scriptRender = async (code: string,options) => {
   newCode += lifeCycleRender ? await lifeCycleRender.render() : '';
   return {
     newCode,
+    importRender,
     dataRender,
     computedRender,
     methodsRender,
     lifeCycleRender,
     propsRender,
-    watchRender
+    watchRender,
+    mixinRender
   }
 }
 

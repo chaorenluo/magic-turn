@@ -13,7 +13,7 @@ export default class MethodsRender{
   methodsBodyMap: Map<string, MethodsVariable> = new Map();
   options: any;
 
-  constructor(methodsNode: Array<any>) {
+  constructor(methodsNode: Array<any>,options:any) {
     this.methodsNode = methodsNode;
     this.options = options;
     this.init()

@@ -5,7 +5,7 @@ export default class PropsRender{
   propsKey: Set<string> = new Set();
   isArrayExpression=false;
   options: any;
-  constructor(propsNode:any) {
+  constructor(propsNode:any,options:any) {
     this.propsNode = propsNode;
     this.options = options;
     this.init();

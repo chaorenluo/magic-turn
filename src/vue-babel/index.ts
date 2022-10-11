@@ -1,7 +1,7 @@
 import  { scriptRender } from './template-script'
 import {templateRender} from './template-html'
 import { Parser, DomHandler, DomUtils } from "htmlparser2";
-const vueRender = async (html: any) => {
+const vueRender = async (html: any,options:any) => {
 
   let templateMap = new Map();
   const handler = new DomHandler();
@@ -17,7 +17,7 @@ const vueRender = async (html: any) => {
   }, dom, true)
 
   let scriptNode = templateMap.get("script");
-  let scriptData = await scriptRender(scriptNode.data);
+  let scriptData = await scriptRender(scriptNode.data,options);
   scriptNode.data = scriptData.newCode;
   await templateRender(dom,scriptData)
   const contentHtml = DomUtils.getOuterHTML(dom, {

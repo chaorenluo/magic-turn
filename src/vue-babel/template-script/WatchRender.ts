@@ -8,7 +8,7 @@ export default class WatchRender {
   dataAnalysis: DataAnalysis;
   options: any;
 
-  constructor(watchNode: any, dataAnalysis: DataAnalysis) {
+  constructor(watchNode: any, dataAnalysis: DataAnalysis,options:any) {
     this.watchNode = watchNode;
     this.dataAnalysis = dataAnalysis;
     this.options = options;

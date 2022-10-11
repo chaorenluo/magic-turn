@@ -7,7 +7,7 @@ export default class DataRender{
   reactiveKey: Set<string> = new Set();
   options: any;
   
-  constructor(dataNode: Array<any>,options) {
+  constructor(dataNode: Array<any>,options:any) {
     this.dataNode = dataNode;
     this.options = options;
     this.init();
@@ -45,7 +45,7 @@ export default class DataRender{
       })
     }
     if(reactiveCode && reactiveCode.code){
-      code+=`\nconst state = reactive(${reactiveCode.code});\n`
+      code+=`\nconst ${this.options.dataName} = reactive(${reactiveCode.code});\n`
     }
     return code
   }
