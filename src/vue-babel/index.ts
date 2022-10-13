@@ -10,16 +10,20 @@ const vueRender = async (html: any,options:any) => {
   parser.done();
   const dom = handler.dom;
   DomUtils.findOne(elem => {
-    if (elem.type === 'script') {
+    if (!templateMap.has('script') && elem.name === 'script') {
       elem.attribs = {setup:""}
       templateMap.set('script',elem.children[0])
+    }
+    if (!templateMap.has('template') && elem.name === 'template') {
+      templateMap.set('template',elem)
     }
   }, dom, true)
 
   let scriptNode = templateMap.get("script");
+  let templateNode = templateMap.get("template");
   let scriptData = await scriptRender(scriptNode.data,options);
   scriptNode.data = scriptData.newCode;
-  await templateRender(dom,scriptData)
+  await templateRender(templateNode,scriptData)
   const contentHtml = DomUtils.getOuterHTML(dom, {
     encodeEntities:'utf8'
   });

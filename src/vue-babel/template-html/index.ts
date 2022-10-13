@@ -16,12 +16,61 @@ export const templateRender = async (dom: any, scriptData: any) => {
   const addPrefixIdentifier = (path: any, name: string) => {
     const identifierNode = path.node;
     let node = t.memberExpression(t.identifier(name), identifierNode)
-
-    path.replaceWith(node)
+    path.replaceWith(node) 
   }
+
 
   const removeAdapterVal = (code) => {
     return code.replace(adapterVariable,'').replace(';','');
+  }
+
+  const loopInterpolation = (elem: any) => {
+    let str = elem.data;
+    let interpolationList: Array<any> = [];
+    let pattern = /\{{(.+?)\}}/g;
+    let strItem;
+    while (strItem = pattern.exec(str)) {
+      let ast = parse(strItem[1])
+      let data = {
+        oldValue: strItem[1],
+      }
+      traverse.default(ast, {
+        Identifier(path: any) {
+          if (!path.parent.property || path.key === 'object') {
+            let name = path.node.name;
+  
+            if (dataRender && dataRender.hasReactiveKey(name)) {
+              interpolationList.push({
+                ...data,
+                ast,
+                path,
+                replaceName: dataRender.options.dataName
+              })
+            }
+            if (mixinRender && mixinRender.reactiveMap.has(name)) {
+              interpolationList.push({
+                ...data,
+                ast,
+                path,
+                replaceName: mixinRender.reactiveMap.get(name)
+              })
+            }
+          }
+        }
+      })
+    }
+  
+    interpolationList.forEach((value) => {
+      addPrefixIdentifier(value.path, value.replaceName)
+    })
+    RenderCallbacks.push(async () => {
+      const callback = async(item:any) => {
+        let value = await generate.default(item.ast);
+        let code = removeAdapterVal(value.code)
+        elem.data = elem.data.replaceAll(item.oldValue,code)
+      }
+     await  Promise.all(interpolationList.map(callback))
+    })
   }
 
   const replaceAttribsVal = (attribs: any, key: string) => {
@@ -38,13 +87,13 @@ export const templateRender = async (dom: any, scriptData: any) => {
         if (!path.parent.property || path.key === 'object') {
           let name = path.node.name;
 
-          if (dataRender.hasReactiveKey(name)) {
+          if (dataRender && dataRender.hasReactiveKey(name)) {
             nodeIdentifier.push({
               path,
               replaceName: dataRender.options.dataName
             })
           }
-          if (mixinRender.reactiveMap.has(name)) {
+          if (mixinRender && mixinRender.reactiveMap.has(name)) {
             nodeIdentifier.push({
               path,
               replaceName: mixinRender.reactiveMap.get(name)
@@ -62,6 +111,12 @@ export const templateRender = async (dom: any, scriptData: any) => {
     })
   }
 
+  const replaceInterpolation = (elem:any) => {
+    if (elem.type === 'text') {
+      loopInterpolation(elem)
+    }
+  }
+
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
       let firstChar = key.charAt(0);
@@ -69,10 +124,10 @@ export const templateRender = async (dom: any, scriptData: any) => {
     })
   }
   if (scriptData) {
-    DomUtils.findOne((elem) => {
+    DomUtils.filter((elem:any) => {
       const attribs = elem.attribs;
-      dealWithAttribs(attribs)
-
+      attribs && dealWithAttribs(attribs)
+      replaceInterpolation(elem)
     }, dom, true)
     await Promise.all(RenderCallbacks.map(callback => callback()))
   }

@@ -1,8 +1,6 @@
 // @ts-nocheck
 
 import parser from "@babel/parser";
-import { readFile } from 'fs/promises'
-import generate from "@babel/generator";
 import t from '@babel/types';
 import traverse from "@babel/traverse";
 import DataRender from './DataRender';
@@ -53,10 +51,59 @@ const scriptRender = async (code: string,options) => {
     return node
   }
 
-  const checkMixinAttribute = () => {
-    mixinRender.nodeList(node => {
-
-    })
+  const replaceNodeName = (property, name, newNode) => {
+    const computedReplace = () => {
+      newNode.object = newNode.property;
+      newNode.property = t.identifier('value')
+      return true;
+    }
+    const templateLiteral = () => {
+      if (property.type === 'TemplateLiteral') { 
+        let type = loopProperty(path)
+        newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier(options.dataName)
+        return true;
+      }
+    }
+    const dataReactive = () => {
+      if (dataRender && dataRender?.hasReactiveKey(name)) { 
+        newNode.object = t.identifier(options.dataName);
+        return true;
+      }
+    }
+    const mixinReactive = () => {
+      if (mixinRender && mixinRender.reactiveMap.has(name) ) {
+        newNode.object = t.identifier(mixinRender.reactiveMap.get(name))
+        return true;
+      }
+    }
+    const mixinCompute = () => {
+      if (mixinRender && mixinRender.computeMap.has(name)) {
+        return computedReplace()
+      }
+    }
+    const dataCompute = () => {
+      if (computedRender && computedRender?.hasComputedKey(name)) {
+       return computedReplace()
+      }
+    }
+    const dataProps = () => {
+      if (propsRender && propsRender?.hasPropsKey(name)) {
+        newNode.object = t.identifier('props')
+        return true;
+      }
+    }
+    const end = () => {
+      newNode = newNode.property;
+      return true
+    }
+    let callback = [templateLiteral, dataReactive, mixinReactive, mixinCompute, dataCompute, dataProps, end]
+    for (let index = 0; index < callback.length; index++) {
+      const element = callback[index];
+      if (element()) {
+        break;
+      }
+    }
+    return newNode;
   }
 
   const ast = parse(code, {
@@ -112,25 +159,8 @@ const scriptRender = async (code: string,options) => {
         const property = path.node.property;
         const name = property.name;
         let newNode = path.node;
-        if (property.type === 'TemplateLiteral'){
-          let type = loopProperty(path)
-          newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier(options.dataName)
-        }else if (dataRender && dataRender?.hasReactiveKey(name)) {
-          newNode.object = t.identifier(options.dataName)
-        } else if (mixinRender && mixinRender.reactiveMap.has(name) ) {
-          newNode.object = t.identifier(mixinRender.reactiveMap.get(name))
-        } else if (mixinRender && mixinRender.computeMap.has(name)) {
-          newNode.object = newNode.property;
-          newNode.property = t.identifier('value')
-        }
-        else if (computedRender && computedRender?.hasComputedKey(name)) {
-          newNode.object = newNode.property;
-          newNode.property = t.identifier('value')
-        } else if (propsRender && propsRender?.hasPropsKey(name)) {
-          newNode.object = t.identifier('props')
-        } else {
-          newNode = newNode.property;
-        }
+        newNode =  replaceNodeName(property, name, newNode);
+        // console.log(s1)
         if (name && name.indexOf('$') > -1) {
           // 处理refs语句
           if (name === '$refs') {
