@@ -33,8 +33,8 @@ export default class MixinRender{
       item.specifiers.forEach(specifier => {
         const name = specifier.local.name;
         if (this.mixinList.includes(name)) {
-          const value = item.source.value;
-          const file = path.join(mixinAliasVal, value.replace(mixinAliasKey, '')).replace('.js', '')+'.js' as string;
+          const value = item.source.value.replace('mixin','');
+          const file = path.join(mixinAliasVal, value.replace(mixinAliasKey, '')).replace('.js', '') + '.js' as string;
           if(!MixinRender.recordMixin.has(name)) {
             this.filesList.push({
               path: file,
