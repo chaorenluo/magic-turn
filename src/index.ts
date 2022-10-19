@@ -11,7 +11,7 @@ const {scriptRender,vueRender } = babelRender;
 
 const init = async (path: string) => {
 
-  conversionVuex(options,['cards'])
+  conversionVuex(options,['auth'])
 
   // const code = await readFile(path, { encoding: 'utf-8' });
   // if (path.indexOf('.vue') > -1) {

@@ -21,9 +21,12 @@ export default class PiniaRender {
         let fileCode = await readFile(path.resolve(filePath), { encoding: 'utf-8' })
         let piniaNode = new PiniaNode(fileCode, filePath, fileName);
         this.piniaNodeList.add(piniaNode);
-        PiniaNode.cacheNode.set(fileName,piniaNode)
+        PiniaNode.cacheNode.set(fileName, piniaNode)
+        piniaNode.buildAst();
+        let bodyCode = await piniaNode.renderPinia();
+        console.log('bodyCode--',bodyCode)
       } catch (e) {
-        throw new Error('请检查store别名路径是否正确')
+        throw new Error(e)
       }
     }
     await Promise.all(this.fileNameList.map(fileCallback))
