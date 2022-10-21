@@ -1,63 +1,70 @@
 export const state = () => ({
-  user_role: 'buyer', // 会员中心用户角色
-  list_data: {}, // 列表返回數據
-  connectFBToken: '', // fb登入token
-  page_setting: {}, // 页面设置信息，例如回显问题
+  checkCard: [],
+  issueSite: []
+})
 
-  fix_head_height: 0.88 // 固定头高度
-
-});
-
-export const getters = {
-  sticky_top(state) {
-    if (process.browser) {
-      // return state.fix_head_height * zoomSize; // px
-      return state.fix_head_height; // rem
-    }
-    return 0;
+export const actions = {
+  // 实名认证--多账户查询 params: {id_card}
+  fetchCheckCardRepeat({ commit }, params) {
+    return this.$axios.post('auth/check_card_repeat', params).then(res => {
+      const data = res.data
+      if (data.code === 200) {
+        commit('updateCheckCard', data.data)
+      }
+      return data
+    })
+  },
+  // 实名认证 - 实名认证发证地
+  fetchIssueSite({ commit }) {
+    return this.$axios.post('auth/issue_site').then(res => {
+      commit('updateIssueSite', res.data.data)
+    })
+  },
+  // 实名认证 - 是否可以注销旧账号
+  fetchCanCancelOld({ commit }, params) {
+    return this.$axios.post('auth/can_cancel_old', params).then(res => {
+      return res.data
+    })
+  },
+  // 实名认证 - 提交认证
+  fetchAuthSubmit({ commit }, params) {
+    return this.$axios.post('auth/submit', params).then(res => {
+      return res.data
+    })
+  },
+  // 实名认证-上传身份证接口
+  fetchUploadIdcard({ commit }, params) {
+    return this.$axios.post('pub/upload/idcard', params).then(res => {
+      return res.data
+    })
+  },
+  // 实名认证-上传健保卡接口
+  fetchUploadHealthCard({ commit }, params) {
+    return this.$axios.post('pub/upload/adultHealthCard', params).then(res => {
+      return res.data
+    })
+  },
+  // 实名认证-提交认证资料
+  fetchAuthAdult({ commit }, params) {
+    return this.$axios.post('auth/adult/success', params).then(res => {
+      return res.data
+    })
   }
-};
+}
 
 export const mutations = {
-  storeListData(state, data) {
-    const type = data.type;
-    state.list_data[type] = data;
+  updateCheckCard(state, data) {
+    const { list } = data
+    state.checkCard = list
   },
-  deletListData(state, data) {
+  updateIssueSite(state, data) {
     if (data) {
-      delete state.list_data[data];
-    } else {
-      state.list_data = {};
+      for(let key in data) {
+        state.issueSite.push({
+          text: data[key],
+          value: key
+        })
+      }
     }
-  },
-  setConnectFBToken(state, data) {
-    state.connectFBToken = data;
-  },
-  /**
-   * 记录页面配置信息
-   * @param  {String} page [页面]
-   * @return {Object} null
-   */
-  updatePageSetting(state, data) {
-    const { page } = data;
-    state.page_setting[page] = data;
-  },
-  // 清楚页面配置信息
-  deletePageSetting(state, prop) {
-    if (prop) {
-      delete state.page_setting[prop];
-    } else {
-      state.page_setting = {};
-    }
-  },
-  /**
-   * 更新会员角色
-   * @param  {Number} active [角色]
-   */
-  updateUserRole(state, active) {
-    state.user_role = active === 1 ? 'seller' : 'buyer';
-  },
-  setFixHeadHeight(state, data) {
-    state.fix_head_height = data;
   }
-};
+}

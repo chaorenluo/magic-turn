@@ -21,16 +21,19 @@ export default class ComputedRender{
 
   init() { 
     this.computeNode.forEach(node => {
-      const nodeName = node.key.name;
-      this.computedKey.add(nodeName);
-      const isReadWrite = node.type === 'ObjectProperty'
-      const computedItem = {
-        isReadWrite,
-        name: nodeName,
-        params: node.params,
-        body: isReadWrite ? node.value : node.body
+      if (node.type != 'SpreadElement') {
+        console.log(node.type)
+        const nodeName = node.key.name;
+        this.computedKey.add(nodeName);
+        const isReadWrite = node.type === 'ObjectProperty'
+        const computedItem = {
+          isReadWrite,
+          name: nodeName,
+          params: node.params,
+          body: isReadWrite ? node.value : node.body
+        }
+        this.computeBodyMap.set(nodeName,computedItem) 
       }
-      this.computeBodyMap.set(nodeName,computedItem)
     })
   }
 

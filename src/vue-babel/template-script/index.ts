@@ -11,18 +11,10 @@ import PropsRender from './PropsRender'
 import ImportRender from './ImportRender'
 import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
+import VuexRender from './VuexRender'
+import {OptionsApi} from './utils'
 const { parse } = parser;
 
-
-
-enum optionsApi {
-  data = 'data',
-  computed = 'computed',
-  methods = 'methods',
-  props = 'props',
-  watch = 'watch',
-  mixins = 'mixins'
-}
 
 
 
@@ -35,6 +27,7 @@ const scriptRender = async (code: string,options) => {
   let propsRender: PropsRender;
   let watchRender: WatchRender;
   let mixinRender: MixinRender;
+  let vuexRender: VuexRender;
   let importRender = ImportRender();
 
 
@@ -109,6 +102,10 @@ const scriptRender = async (code: string,options) => {
   const ast = parse(code, {
     sourceType: 'module'
   })
+  // 转义vuex
+  vuexRender = new VuexRender(ast, options);
+  await vuexRender.analysisAst()
+
   // 转义mixin
   traverse.default(ast, {
     ImportDeclaration(path) {
@@ -117,7 +114,7 @@ const scriptRender = async (code: string,options) => {
    ObjectProperty(path) {
       const properties = path.node.value.properties;
       const nodeName = path.node.key.name;
-      if (optionsApi.mixins === nodeName) {
+      if (OptionsApi.Mixins === nodeName) {
         const elements = path.node.value.elements.map(item => item.name)
         mixinRender = new MixinRender(elements, importRender.importGlobal, options)
       }
@@ -127,7 +124,7 @@ const scriptRender = async (code: string,options) => {
   traverse.default(ast, {
     ObjectMethod(path) {
       const nodeName = path.node.key.name;
-      if (nodeName === optionsApi.data) {
+      if (nodeName === OptionsApi.Data) {
         dataRender = new DataRender(path.node.body.body,options)
       } else if (LifeCycleRender.isCycle(nodeName)) {
         lifeCycleRender.init(path.node)
@@ -137,17 +134,17 @@ const scriptRender = async (code: string,options) => {
       const properties = path.node.value.properties;
       const nodeName = path.node.key.name;
       switch (nodeName) {
-        case optionsApi.computed:
+        case OptionsApi.Computed:
           computedRender = new ComputedRender(properties,options)
           importRender.addVueApi('computed')
           break;
-        case optionsApi.methods:
+        case OptionsApi.Methods:
           methodsRender = new MethodsRender(properties,options)
           break;
-        case optionsApi.props:
+        case OptionsApi.Props:
           propsRender = new PropsRender(path.node.value,options)
           break;
-        case optionsApi.watch:
+        case OptionsApi.Watch:
           watchRender = new WatchRender(path.node.value, dataRender,options)
           break;
         default:

@@ -11,15 +11,15 @@ const {scriptRender,vueRender } = babelRender;
 
 const init = async (path: string) => {
 
-  conversionVuex(options,['auth'])
+  // conversionVuex(options,['auth'])
 
-  // const code = await readFile(path, { encoding: 'utf-8' });
-  // if (path.indexOf('.vue') > -1) {
-  //   vueRender(code,options)
-  // } else {
-  //   const scriptCode = await scriptRender(code,options);
-  //   console.log(scriptCode)
-  // }
+  const code = await readFile(path, { encoding: 'utf-8' });
+  if (path.indexOf('.vue') > -1) {
+    vueRender(code,options)
+  } else {
+    const scriptCode = await scriptRender(code,options);
+    console.log(scriptCode)
+  }
 }
 
 

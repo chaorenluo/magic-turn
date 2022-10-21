@@ -2,7 +2,7 @@ import parser from "@babel/parser";
 import t from '@babel/types';
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
-import {modifyCycleName} from '../template-script/utils'
+import {modifyCycleName,addSuffix} from '../template-script/utils'
 
 
 const { parse } = parser;
@@ -17,27 +17,36 @@ enum PinnaType {
 export default class PinnaNode {
   astNode = {};
   oldAstNode = {};
+  options = {};
   importModules = new Set();
+  importGlobal = new Set();
   additionalModule = new Set();
   useModules = new Map();
   stateMap = new Map<string, any>();
   gettersMap = new Map<string, any>();
   actionsMap = new Map<string, any>();
   mutationsMap = new Map<string, any>();
+
   fileCode = '';
   filePath = '';
   fileName = '';
+  pathPrefix = '';
+  stateSuffix = 'Store'
   
   static cacheNode = new Map<string, PinnaNode>();
 
-  constructor(_fileCode: string, _filePath: string, _fileName: string) {
+  constructor(_fileCode: string, _filePath: string, _fileName: string,_pathPrefix:string,_options:any) {
     this.fileCode = _fileCode;
     this.filePath = _filePath;
     this.fileName = _fileName;
+    this.pathPrefix = _pathPrefix;
+    this.options = _options;
     this.createAst();
   }
 
+
   addVariableDeclarator(name) {
+    name = addSuffix(name,this.stateSuffix)
     let callExpression = t.callExpression(t.identifier(modifyCycleName(name,'use')),[]);
     let declarations = t.variableDeclarator(t.identifier(name), callExpression);
     let variableDeclaration = t.variableDeclaration('const', [declarations]);
@@ -113,9 +122,19 @@ export default class PinnaNode {
           let value = (parent.init || parent.value);
           if (value) {
             let properties = value.properties;
-            if (nodeName === PinnaType.state) properties = value.body.properties;
+            if (nodeName === PinnaType.state && value.body) {
+              properties = value.body.properties;
+            }
             if (properties) _this.dealWithType(properties, nodeName); 
           }
+        }
+      },
+      ThisExpression(path) {
+        const property = path.parent.property;
+        const propertyName = property.name;
+        if (propertyName && propertyName.charAt(0) === '$') {
+          _this.importGlobal.add(propertyName)
+          path.parentPath.replaceWith(property)
         }
       },
       MemberExpression(path) {
@@ -129,6 +148,7 @@ export default class PinnaNode {
         if (nodeName === 'rootState') {
           _this.getParentObjectMethod(path, property)
           newNode = newNode.property;
+          newNode.name = addSuffix(newNode.name,_this.stateSuffix)
           path.replaceWith(newNode)
         }
       },
@@ -169,6 +189,24 @@ export default class PinnaNode {
     program.body =  Array.from(this.additionalModule).concat(program.body)
   }
 
+  addImportPinia(program:any) {
+    let defineStore = t.identifier('defineStore');
+    let importSpecifier = t.importSpecifier(defineStore, defineStore)
+    let stringLiteral = t.stringLiteral('pinia') 
+    let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
+    program.body.unshift(importDeclaration)
+  }
+
+  addImportHooks(program: any) {
+    this.importModules.forEach(item => {
+      let hookStore = t.identifier(modifyCycleName(addSuffix(item, this.stateSuffix), 'use'));
+      let importSpecifier = t.importSpecifier(hookStore, hookStore)
+      let stringLiteral = t.stringLiteral(`'${this.options.piniaAliasKey}/${item}'`) 
+      let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
+      program.body.unshift(importDeclaration)
+    })
+  }
+
   buildAst() {
     let state = this.stateMap.size > 0 ? `state: () => ({}),` : '';
     let getters = this.gettersMap.size > 0 ? `getters: {},` : '';
@@ -184,18 +222,19 @@ export default class PinnaNode {
       sourceType: 'module'
     })
     this.additional(ast.program)
+    this.addImportHooks(ast.program)
+    this.addImportPinia(ast.program)
     let _this = this;
     traverse.default(ast, {
       ObjectProperty(path) {
         const node = path.node;
         const nodeName = node.key.name;
-        if (nodeName === PinnaType.state) {
+        if (nodeName === PinnaType.state && node.value.body) {
           let properties = node.value.body.properties;
           _this.addState(properties)
         }
         if (nodeName === PinnaType.getters) { 
           let properties = node.value.properties;
-          console.log(properties)
           _this.addGetters(properties)
           
         }

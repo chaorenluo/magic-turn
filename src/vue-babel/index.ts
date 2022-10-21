@@ -21,7 +21,8 @@ const vueRender = async (html: any,options:any) => {
 
   let scriptNode = templateMap.get("script");
   let templateNode = templateMap.get("template");
-  let scriptData = await scriptRender(scriptNode.data,options);
+  let scriptData = await scriptRender(scriptNode.data, options);
+
   scriptNode.data = scriptData.newCode;
   await templateRender(templateNode,scriptData)
   const contentHtml = DomUtils.getOuterHTML(dom, {

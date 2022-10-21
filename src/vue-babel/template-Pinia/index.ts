@@ -1,6 +1,7 @@
 import PiniaRender from './PiniaRender'
 
-export const conversionVuex = (options: any, fileNameList: Array<string>) => {
+export const piniaStart = async (options: any, fileNameList: Array<string>):PiniaRender => {
   let piniaRender = new PiniaRender(options, fileNameList)
-  piniaRender.initPinia()
+  await piniaRender.initPinia()
+  return piniaRender
 }
