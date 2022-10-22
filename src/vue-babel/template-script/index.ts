@@ -2,6 +2,7 @@
 
 import parser from "@babel/parser";
 import t from '@babel/types';
+import generate from "@babel/generator";
 import traverse from "@babel/traverse";
 import DataRender from './DataRender';
 import ComputedRender from './ComputedRender';
@@ -19,7 +20,10 @@ const { parse } = parser;
 
 
 const scriptRender = async (code: string,options) => {
-  
+  let newAst = parse('', {
+    sourceType: 'module'
+  })
+
   let dataRender: DataRender;
   let computedRender: ComputedRender;
   let methodsRender: MethodsRender;
@@ -28,9 +32,7 @@ const scriptRender = async (code: string,options) => {
   let watchRender: WatchRender;
   let mixinRender: MixinRender;
   let vuexRender: VuexRender;
-  let importRender = ImportRender();
-
-
+  let importRender = ImportRender(newAst);
   const loopProperty = (path) => {
     if (!path.node.property) {
       return path.node.type
@@ -102,6 +104,7 @@ const scriptRender = async (code: string,options) => {
   const ast = parse(code, {
     sourceType: 'module'
   })
+
   // 转义vuex
   vuexRender = new VuexRender(ast, options);
   await vuexRender.analysisAst()
@@ -121,11 +124,15 @@ const scriptRender = async (code: string,options) => {
     }
   })
   mixinRender && await  mixinRender.initMixin()
+
+  // 收集全局变量
+  importRender.collectGlobalVariable(ast)
+
   traverse.default(ast, {
     ObjectMethod(path) {
       const nodeName = path.node.key.name;
       if (nodeName === OptionsApi.Data) {
-        dataRender = new DataRender(path.node.body.body,options)
+        dataRender = new DataRender(path.node.body.body,options,newAst)
       } else if (LifeCycleRender.isCycle(nodeName)) {
         lifeCycleRender.init(path.node)
       }
@@ -135,17 +142,17 @@ const scriptRender = async (code: string,options) => {
       const nodeName = path.node.key.name;
       switch (nodeName) {
         case OptionsApi.Computed:
-          computedRender = new ComputedRender(properties,options)
+          computedRender = new ComputedRender(properties,options,newAst)
           importRender.addVueApi('computed')
           break;
         case OptionsApi.Methods:
-          methodsRender = new MethodsRender(properties,options)
+          methodsRender = new MethodsRender(properties,options,newAst)
           break;
         case OptionsApi.Props:
-          propsRender = new PropsRender(path.node.value,options)
+          propsRender = new PropsRender(path.node.value,options,newAst)
           break;
         case OptionsApi.Watch:
-          watchRender = new WatchRender(path.node.value, dataRender,options)
+          watchRender = new WatchRender(path.node.value, dataRender,options,newAst)
           break;
         default:
           break;
@@ -157,7 +164,7 @@ const scriptRender = async (code: string,options) => {
         const name = property.name;
         let newNode = path.node;
         newNode =  replaceNodeName(property, name, newNode);
-        // console.log(s1)
+
         if (name && name.indexOf('$') > -1) {
           // 处理refs语句
           if (name === '$refs') {
@@ -185,14 +192,16 @@ const scriptRender = async (code: string,options) => {
 
   });
   let newCode = '';
-  newCode += importRender ? await importRender.render() : '';
-  newCode += mixinRender ? mixinRender.render() : '';
-  newCode += propsRender ? await propsRender.render() : '';
-  newCode += dataRender ? await dataRender.render() : '';
-  newCode += computedRender ? await computedRender.render() : '';
-  newCode += methodsRender ? await methodsRender.render() : '';
+  newCode += importRender ?  importRender.render() : '';
+  // newCode += mixinRender ? mixinRender.render() : '';
+  newCode += propsRender ?  propsRender.render() : '';
+  newCode += dataRender ?  dataRender.render() : '';
+  newCode += computedRender ?  computedRender.render() : '';
+  newCode += methodsRender ?  methodsRender.render() : '';
   newCode += watchRender ? await watchRender.render() : '';
-  newCode += lifeCycleRender ? await lifeCycleRender.render() : '';
+  // newCode += lifeCycleRender ? await lifeCycleRender.render() : '';
+  let codes = await generate.default(newAst)
+  console.log(codes.code)
   return {
     newCode,
     importRender,

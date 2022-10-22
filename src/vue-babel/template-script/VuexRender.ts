@@ -1,6 +1,6 @@
 import traverse from "@babel/traverse";
 import parser from "@babel/parser";
-import { OptionsApi, modifyCycleName, addSuffix,VuexFn } from "./utils";
+import { OptionsApi, modifyCycleName,VuexFn,getPiniaName,getPiniaVariable } from "./utils";
 import t from "@babel/types";
 import fs from "fs";
 import { piniaStart } from "../template-Pinia/index";
@@ -13,18 +13,15 @@ type Arguments = Array<
   const { parse } = parser;
 
 export default class VuexRender {
-  astNode = {};
+  astNode:t.File;
   options = {};
-  importModules = new Set();
-  hookModules = new Set();
   stateHookMap = new Map();
-  piniaModules = new Set();
+  piniaModules = new Set<string>();
   piniaRender:PiniaRender;
   gettersModules = new Set();
   mutationsModules = new Set();
-  deleteModules = new Set<Function>();
 
-  constructor(_astNode: any, _options: any) {
+  constructor(_astNode: t.File, _options: any) {
     this.astNode = _astNode;
     this.options = _options;
   }
@@ -66,7 +63,10 @@ export default class VuexRender {
         let status = this.isFile(key);
         let name = status ? key : "index";
         this.piniaModules.add(name);
-        this.stateHookMap.set(key, addSuffix(name, "Store"));
+        this.stateHookMap.set(key, {
+          prefix:'',
+          value:getPiniaVariable(name)
+        });
       });
     }
   }
@@ -75,11 +75,19 @@ export default class VuexRender {
     args.forEach((item) => {
       if (item.type === 'ObjectExpression') {
         item.properties.forEach((v) => {
+          let keyName = v.key.name;
           let value = v.value.value as string;
           let gettersName = value.split('/')[0];
+          let gettersFn = value.split('/')[1];
           this.piniaModules.add(gettersName);
-          this.stateHookMap.set(gettersName, addSuffix(gettersName, "Store"));
-          this.createComputed(v.key.name, value);
+          if(gettersFn === keyName){
+            this.stateHookMap.set(gettersFn, {
+              prefix:getPiniaVariable(gettersName),
+              value:'',
+            });
+          }else{
+            this.createComputed(keyName, value);
+          }        
         });
       }
     });
@@ -90,10 +98,18 @@ export default class VuexRender {
       if (item.type === 'ObjectExpression') {
         item.properties.forEach((v) => {
           let value = v.value.value as string;
+          let keyName = v.key.name;
           let mutationsName = value.split('/')[0];
+          let mutationsFn = value.split('/')[1];
           this.piniaModules.add(mutationsName);
-          this.stateHookMap.set(mutationsName, addSuffix(mutationsName, "Store"));
-          this.createComputed(v.key.name, value);
+          if(mutationsFn === keyName){
+            this.stateHookMap.set(mutationsFn, {
+              prefix:getPiniaVariable(mutationsName),
+              value:''
+            });
+          }else{
+            this.createMutations(keyName, value);
+          }
         });
       }
     });
@@ -105,9 +121,6 @@ export default class VuexRender {
         const argument = item.argument as t.CallExpression;
         const calleeName = argument.callee.name;
         callback(argument, calleeName)
-        this.deleteModules.add(() => {
-          properties.splice(index,1)
-        })
       }
     });
   }
@@ -126,10 +139,45 @@ export default class VuexRender {
   analysisMethods(properties: Array<any>) {
     this.propertiesForEach(properties, (argument,calleeName) => {
       if (calleeName === VuexFn.mapMutations) { 
-        console.log(properties)
         this.dealWithMutations(argument.arguments)
       }
     })
+  }
+
+  createPiniaImport(importName:string,piniaName:string){
+    let hookStore = t.identifier(importName);
+    let importSpecifier = t.importSpecifier(hookStore, hookStore)
+    let stringLiteral = t.stringLiteral(`'${this.options.piniaAliasKey}/${piniaName}'`) 
+    let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
+    return importDeclaration
+  }
+  createPiniaHook(name:string){
+    name = getPiniaVariable(name)
+    let callExpression = t.callExpression(t.identifier(modifyCycleName(name,'use')),[]);
+    let declarations = t.variableDeclarator(t.identifier(name), callExpression);
+    let variableDeclaration = t.variableDeclaration('const', [declarations]);
+    return variableDeclaration
+  }
+
+
+  insertPiniaModules(program:t.Program){
+    let body = program.body
+    let index = body.length-1;
+    let imports:Array<t.ImportDeclaration> = [];
+    let hooks:Array<t.VariableDeclaration> = [];
+    this.piniaModules.forEach(item=>{
+      let importName = getPiniaName(item)
+      let importDeclaration = this.createPiniaImport(importName,item)
+      let variableDeclaration = this.createPiniaHook(item)
+      imports.push(importDeclaration);
+      hooks.push(variableDeclaration)
+    })
+    imports.concat(hooks).forEach(item=>body.splice(index,0,item));
+  }
+
+  insertPiniaHooks(program:t.Program){
+    let body = program.body
+    let index = body.length-1;
   }
 
   async analysisAst() {
@@ -150,7 +198,7 @@ export default class VuexRender {
         }
       },
     });
-    this.deleteModules.forEach(item=>item())
+    this.insertPiniaModules(this.astNode.program)
     this.piniaRender = await piniaStart(this.options,Array.from(this.piniaModules) as Array<string>)
   }
 }

@@ -1,24 +1,31 @@
-import generate from "@babel/generator";
+import parser from "@babel/parser";
+import { createRunFunction, arrowFunctionExpression, OptionsApi } from './utils';
+import t from '@babel/types';
 import DataAnalysis from './DataRender'
+
+const { parse } = parser;
+
 export default class WatchRender {
   watchNode: any;
-  objectMethod: Array<any> = [];
+  objectWatch: Array<any> = [];
   objectProperty: Array<any> = [];
   watchKey: Set<string> = new Set();
   dataAnalysis: DataAnalysis;
   options: any;
+  newAst: t.File;
 
-  constructor(watchNode: any, dataAnalysis: DataAnalysis,options:any) {
+  constructor(watchNode: any, dataAnalysis: DataAnalysis, options: any, _newAst: t.File) {
     this.watchNode = watchNode;
     this.dataAnalysis = dataAnalysis;
     this.options = options;
+    this.newAst = _newAst;
     this.init()
   }
 
   init() {
     this.watchNode.properties.forEach((node) => {
       if (node.type === 'ObjectMethod') {
-        this.objectMethod.push(node)
+        this.objectWatch.push(node)
       }
       if (node.type === 'ObjectProperty') {
         this.objectProperty.push(node)
@@ -35,74 +42,61 @@ export default class WatchRender {
     if (this.dataAnalysis.hasReactiveKey(watchName.split('.')[0])) {
       watchName = `state.${watchName}`
     }
-    return watchName
+    return parse(watchName, {
+      sourceType: 'module'
+    }).program.body[0]?.expression
+  }
+
+  createWatchNode(watchItem: any, watchParams?: any) {
+    let watchNameNode = this.addPrefix(watchItem.key);
+    let watchAttribute = arrowFunctionExpression([], watchNameNode)
+    let watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
+    let params = [watchAttribute, watchFn];
+    if (watchParams) {
+      params.push(t.objectExpression(watchParams) as any)
+    }
+    let fn = createRunFunction(OptionsApi.Watch, params as any)
+    this.newAst.program.body.push(fn)
   }
 
   renderObjectMethod() {
-    return Promise.all(this.objectMethod.map(this.dealWithMethod.bind(this)))
+    this.objectWatch.forEach((item) => this.createWatchNode(item))
   }
 
-  async dealWithMethod(node) {
-    let code = '';
-    let watchName = this.addPrefix(node.key);
-    const paramsCode = await node.params.map(node => generate.default(node));
-    const bodyCode = await generate.default(node.body)
-    code += `watch(()=>${watchName},(${paramsCode.map(item => item.code).join(',')})=>${bodyCode.code});\n`;
-    return code
-  }
-
-  async dealWithProperty(node) {
-      let code = ''
-      let watchName = this.addPrefix(node.key);
-      const value = node.value;
-      if (value.properties) {
-        let watchItem = {}
-        let watchParams: any = []
-        value.properties.forEach((v: any) => {
-          if (v.key.name == "handler") {
-
-            watchItem = {
-              params: v.value.params,
-              body: v.value.body
-            }
-          } else {
-            watchParams.push(v)
+  dealWithProperty(node) {
+    const value = node.value;
+    if (value.properties) {
+      let watchItem: any = {}
+      let watchParams: any = []
+      value.properties.forEach((v: any) => {
+        if (v.key.name == "handler") {
+          watchItem = {
+            params: v.value.params,
+            body: v.value.body,
+            key: node.key
           }
-        })
-        let body = await generate.default(watchItem.body)
-        const paramsCode = await watchItem.params.map(node => generate.default(node));
-        const watchApi = await watchParams.map(node => generate.default(node));
-        code += `\nwatch(()=>${watchName},(${paramsCode?.map(item => item.code).join(',')})=>${body.code}${watchParams.length > 0 ? `,{${watchApi?.map(item => `${item.code}`).join(',')}}` : ''
-          }) \n`
-      } else if (value.body) {
-        let watchItem = {
-          params: value.params,
-          body: value.body
+        } else {
+          watchParams.push(v)
         }
-        let body = await generate.default(watchItem.body)
-        const paramsCode = await watchItem.params.map(node => generate.default(node));
-        code += `\nwatch(()=>${watchName},(${paramsCode?.map(item => item.code).join(',')})=>${body.code});\n`
+      })
+      this.createWatchNode(watchItem, watchParams)
+    } else if (value.body) {
+      let watchItem = {
+        params: value.params,
+        body: value.body,
+        key: node.key
       }
-      return code
+      this.createWatchNode(watchItem)
+    }
 
   }
 
-  async renderObjectProperty() {
-
-    return Promise.all(this.objectProperty.map(this.dealWithProperty.bind(this)))
-  
+  renderObjectProperty() {
+    this.objectProperty.forEach((item) => this.dealWithProperty(item))
   }
 
-  async render() {
-    const propertyCode = await this.renderObjectProperty()
-    const methodCode = await this.renderObjectMethod()
-    let code = '';
-    [...methodCode, ...propertyCode].forEach(item => {
-      code+=item
-    })
-    return code;
+  render() {
+    this.renderObjectProperty()
+    this.renderObjectMethod()
   }
-
-
-
 }

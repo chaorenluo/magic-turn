@@ -1,15 +1,17 @@
-import generate from "@babel/generator";
-
+import t from '@babel/types';
+import {createFnVariable } from './utils';
 export default class DataRender{
   dataNode: Array<any> = [];
   variableDeclaration: Array<any> = [];
   reactiveData: any = {};
   reactiveKey: Set<string> = new Set();
   options: any;
+  newAst:t.File
   
-  constructor(dataNode: Array<any>,options:any) {
+  constructor(dataNode: Array<any>,options:any,_newAst:t.File) {
     this.dataNode = dataNode;
     this.options = options;
+    this.newAst = _newAst;
     this.init();
   }
 
@@ -36,18 +38,11 @@ export default class DataRender{
   }
 
   async render() {
-    let declarationCode = await Promise.all(this.variableDeclaration.map(node => generate.default(node)))
-    let reactiveCode = await generate.default(this.reactiveData)
-    let code ='';
-    if(declarationCode && declarationCode.length>0){
-      declarationCode.forEach(codeItem=>{
-          if(codeItem.code) code+=codeItem.code+"\n\n"
-      })
+    if( this.variableDeclaration.length>0){
+      this.newAst.program.body.push(...this.variableDeclaration)
     }
-    if(reactiveCode && reactiveCode.code){
-      code+=`\nconst ${this.options.dataName} = reactive(${reactiveCode.code});\n`
-    }
-    return code
+    let reactiveNode = createFnVariable(this.options.dataName,'reactive',[this.reactiveData])
+    this.newAst.program.body.push(reactiveNode) 
   }
   
 }

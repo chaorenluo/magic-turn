@@ -2,7 +2,7 @@ import parser from "@babel/parser";
 import t from '@babel/types';
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
-import {modifyCycleName,addSuffix} from '../template-script/utils'
+import {modifyCycleName,getPiniaName,getPiniaVariable} from '../template-script/utils'
 
 
 const { parse } = parser;
@@ -31,7 +31,6 @@ export default class PinnaNode {
   filePath = '';
   fileName = '';
   pathPrefix = '';
-  stateSuffix = 'Store'
   
   static cacheNode = new Map<string, PinnaNode>();
 
@@ -45,8 +44,8 @@ export default class PinnaNode {
   }
 
 
-  addVariableDeclarator(name) {
-    name = addSuffix(name,this.stateSuffix)
+  addVariableDeclarator(name:string) {
+    name = getPiniaVariable(name)
     let callExpression = t.callExpression(t.identifier(modifyCycleName(name,'use')),[]);
     let declarations = t.variableDeclarator(t.identifier(name), callExpression);
     let variableDeclaration = t.variableDeclaration('const', [declarations]);
@@ -148,7 +147,7 @@ export default class PinnaNode {
         if (nodeName === 'rootState') {
           _this.getParentObjectMethod(path, property)
           newNode = newNode.property;
-          newNode.name = addSuffix(newNode.name,_this.stateSuffix)
+          newNode.name = getPiniaVariable(newNode.name)
           path.replaceWith(newNode)
         }
       },
@@ -199,9 +198,9 @@ export default class PinnaNode {
 
   addImportHooks(program: any) {
     this.importModules.forEach(item => {
-      let hookStore = t.identifier(modifyCycleName(addSuffix(item, this.stateSuffix), 'use'));
+      let hookStore = t.identifier(getPiniaName(item));
       let importSpecifier = t.importSpecifier(hookStore, hookStore)
-      let stringLiteral = t.stringLiteral(`'${this.options.piniaAliasKey}/${item}'`) 
+      let stringLiteral = t.stringLiteral(`${this.options.piniaAliasKey}/${item}`) 
       let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
       program.body.unshift(importDeclaration)
     })

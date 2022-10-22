@@ -26,6 +26,7 @@ export default class PiniaRender {
           PiniaNode.cacheNode.set(pathPrefix, piniaNode)
           piniaNode.buildAst();
           // let bodyCode = await piniaNode.renderPinia();
+          // console.log(bodyCode)
         }
      
     }

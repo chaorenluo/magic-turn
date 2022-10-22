@@ -1,6 +1,6 @@
-import generate from "@babel/generator";
-import { modifyCycleName } from './utils';
 
+import { modifyCycleName,createImport,createFnVariable,createArrayExpression } from './utils';
+import t from '@babel/types';
 const vueApi = {
   "$emit": "emit",
   "$nextTick": "nextTick"
@@ -8,7 +8,7 @@ const vueApi = {
 
 type vueApiType = keyof typeof vueApi;
 
-const ImportRender = () => {
+const ImportRender = (newAst:t.File) => {
   return  {
 
     importGlobal: [],
@@ -16,6 +16,8 @@ const ImportRender = () => {
     vueApiImports: new Set<string>(),
   
     globalApi: new Set<string>(),
+
+    globalVariable: new Array<any>(),
   
     routerApi: new Set<string>(),
   
@@ -25,6 +27,14 @@ const ImportRender = () => {
   
     isVueApi(name: string) {
       return Object.keys(vueApi).includes(name)
+    },
+
+    collectGlobalVariable(ast:t.File){
+      ast.program.body.forEach((item)=>{
+          if(!t.isImportDeclaration(item) && !t.isExportDefaultDeclaration(item)){
+            this.globalVariable.push(item)
+          }
+      })
     },
   
     conversionApi(value: vueApiType) {
@@ -68,56 +78,63 @@ const ImportRender = () => {
     },
   
     renderRouter() {
-      let code = '\n';
       if (this.routerApi.size > 0) {
         this.routerApi.forEach(item => {
-          code+=`const ${item.replace('useR','r')} = ${item}() \n`
+         let importNode = createFnVariable(`${item.replace('useR','r')}`,item)
+         newAst.program.body.push(importNode)
         })
       }
-      return code;
+    },
+
+     renderGlobalVariable(){
+      if(this.globalVariable.length>0){
+        this.globalVariable.forEach(item=>{
+          newAst.program.body.push(item)
+        })
+      }
     },
   
-    async renderImportGlobal() {
-      let code = '';
+     renderImportGlobal() {
       if (this.importGlobal.length > 0) {
-        const data = await Promise.all(this.importGlobal.map(item => generate.default(item).code+'\n'))
-        code = '\n'+data.join('');
+        this.importGlobal.forEach(item=>{
+          newAst.program.body.push(item)
+        })
       }
-      return code;
     },
   
     renderImports() {
-      let code = `\nimport {${Array.from(this.vueApiImports).join(',')}} from "vue";\n`
+      const vueImport = createImport(Array.from(this.vueApiImports),'vue');
+      let   routerImport = null;
       if (this.routerApi.size>0) {
-        code+=`import {${Array.from(this.routerApi).join(',')}} from "vue-router";` 
+        routerImport = createImport(Array.from(this.routerApi),'vue-router');
       }
-      return code;
+      [vueImport,routerImport].forEach(item=>{if(item)newAst.program.body.push(item)})
     },
   
     renderEmit() {
-      let code = '';
       if (this.emitKey.size > 0) {
-        code = `const emit = defineEmits([${Array.from(this.emitKey).map(item => `"${item.toString()}"`)}]);`;
+        const emitNode = createFnVariable('emit','defineEmits',[createArrayExpression(Array.from(this.emitKey))])
+        newAst.program.body.push(emitNode)
       }
-      return code
     },
   
     renderRef() {
-      let code = '';
       if (this.refKey.size > 0) {
-        code += '\n'
         this.refKey.forEach(refName => {
-          code += `const ${refName} = ref(null);\n`
+          let refNode = createFnVariable(refName,'ref',[t.nullLiteral()]);
+          newAst.program.body.push(refNode)
         })
       }
-      return code
     },
   
-    async render() {
-      return  this.renderImports()+(await this.renderImportGlobal())+this.renderRouter()+this.renderEmit()+this.renderRef()
+     render() {
+      this.renderImports();
+      this.renderImportGlobal()
+      this.renderGlobalVariable()
+      this.renderRouter()
+      this.renderEmit()
+      this.renderRef()
     }
-  
-  
   }
 }
 export default ImportRender

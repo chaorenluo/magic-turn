@@ -65,7 +65,7 @@
         <div class="md-tle md-tle-desc">
           購買流程
         </div>
-        <div v-if="game_info" class="txt-center">
+        <div ref="" v-if="game_info" class="txt-center">
           <img v-if="game_info.type.id == 8" src="~/assets/images/mall/store-process.png">
           <img v-else src="~/assets/images/mall/process.png">
         </div>
@@ -105,8 +105,19 @@
 import { mapState } from 'vuex';
 import * as cookie from '~/utils/cookie';
 
+
+
 export default {
+   props: {
+    now_sel: {
+      type: Object,
+      default() {
+        return null;
+      }
+    }
+  },
   data() {
+    const pp=123;
     return {
       buy_popup: {
         show: false,
@@ -133,25 +144,35 @@ export default {
     };
   },
   computed: {
-    ...mapState(['user', 'common', 'mall', 'focusData']),
+    ...mapState(['im']),
     ...mapGetters({
       appealTotal: 'appeal/appealTotal'
     }),
     game_info() {
       return this.mall.mall_info ? this.mall.mall_info.game_info : '';
-    }
+    },
+    msg1:{
+        set(){  
+          console.log('我被设置了')   //msg1设置值时此处触发 
+        },
+        get(){
+          console.log('我被调用了') //msg1获取值时触发
+          return 6         //这儿返回值将是msg1的值。
+        }
+      }
   },
   methods: {
     ...mapMutations({
       deletListData: 'transferData/deletListData',
       deletePageSetting: 'transferData/deletePageSetting'
     }),
-    isHelpful(payload) {
+    async isHelpful(payload) {
       // 一天只能反饋一次
       if (this.buy_popup.is_help > 0) {
         return;
       }
-
+      console.log(this.$refs.ljm)
+      console.log(this.$route)
       this.buy_popup.is_help = payload;
       cookie.set('mall-detail-guide', payload, { expires: 1 });
       this.$gtmClickEvent(['卖场详情页', '购买帮助', payload === 1 ? '有帮助' : '无帮助']);
@@ -209,125 +230,31 @@ export default {
     //     // this.show_guide = 1
     //   }
     // });
+  },
+  watch:{
+    buy_popup(){
+      console.log(this.buy_popup)
+    },
+    
+    pay_list:{
+
+      handler:function(oldV,newV){
+
+          console.log(oldV);
+
+      },
+
+      deep:true
+
+    },
+    arr:function(oldV,newV){
+
+      console.log(oldV);
+
+      console.log(newV);     
+
+      }
   }
 };
 </script>
 
-<style lang="stylus">
-.buy-course {
-  .how-to-buy {
-    position fixed
-    bottom 150px
-    right 0
-    max-width 80%
-    height 60px
-    line-height 60px
-    padding 0 20px 0 30px
-    border-radius 40px 0 0 40px
-    text-align center
-    background #deeefe
-    color #86b4e2
-    font-size 26px
-  }
-  .buy-course__popup {
-    .van-popup__close-icon--top-right {
-      top 28px
-    }
-    .container {
-      height 90%
-      padding-bottom 90px
-      overflow auto
-      img {
-        width 90%
-      }
-      .van-image {
-        img {
-          width 100%
-        }
-      }
-      .row {
-        position relative
-        margin-bottom 50px
-        padding 0 42px
-        .show-answer {
-          position absolute
-          right 86px
-          top 52px
-          padding 0 10px
-          background #fff
-        }
-      }
-      .problem {
-        font-size $fs28
-        font-weight 700
-      }
-      .ask {
-        font-size $fs24
-      }
-      .answer {
-        margin-top 10px
-        font-size $fs26
-        line-height 46px
-        color #999
-        &.ellipsis-box {
-          width 75%
-          height 44px
-        }
-        // &.answer-colllapse {
-        //   display -webkit-box
-        //   height 40px
-        //   width 90%
-        //   overflow hidden
-        //   text-overflow ellipsis
-        //   -webkit-box-orient vertical
-        //   word-break break-all
-        // }
-
-        .payway {
-          padding 20px 0 0 0
-          a {
-            display block
-            width 50%
-            margin-bottom 30px
-            &:last-child {
-              margin-bottom 0
-            }
-            .pay-sm-icon {
-              width 45px
-              height 45px
-              margin-right 10px
-              background-size 45px 45px
-            }
-          }
-        }
-      }
-    }
-    .van-action-sheet__header {
-      border-bottom 1px solid #e5e5e5
-    }
-    .van-dialog__footer {
-      position absolute
-      bottom 0
-      width 100%
-    }
-  }
-
-  .terms-dialog {
-    .van-field {
-      border 1px solid #ebedf0
-      &::after {
-        display none
-      }
-    }
-  }
-}
-.im-page {
-  .how-to-buy {
-    top 20px
-    color #333
-    background none
-    z-index 100
-    color $blue
-  }
-}
-</style>

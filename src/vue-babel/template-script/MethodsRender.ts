@@ -1,60 +1,51 @@
-import generate from "@babel/generator";
 
+import t from '@babel/types';
+import {arrowFunctionExpression,variableFunction } from './utils';
 interface MethodsVariable {
   name: string;
   params: Array<any>;
-  body:any
+  body:any,
+  async:boolean
 }
 
 
 export default class MethodsRender{
-  methodsNode: Array<any>;
+  methodsNode: Array<t.ObjectMethod | t.ObjectProperty | t.SpreadElement>;
   methodsKey: Set<string> = new Set();
   methodsBodyMap: Map<string, MethodsVariable> = new Map();
   options: any;
+  newAst:t.File;
 
-  constructor(methodsNode: Array<any>,options:any) {
+  constructor(methodsNode: Array<any>,options:any,_newAst:t.File) {
     this.methodsNode = methodsNode;
     this.options = options;
+    this.newAst = _newAst;
     this.init()
   }
 
   init() { 
     this.methodsNode.forEach(node => {
-      if(node.type === 'ObjectProperty') return
-      const nodeName = node.key.name;
-      this.methodsKey.add(nodeName);
-      const methodsItem = {
-        name: nodeName,
-        params: node.params,
-        body: node.body
+      if(node.type != 'ObjectProperty' && node.type != 'SpreadElement') {
+        const nodeName = node.key.name;
+        this.methodsKey.add(nodeName);
+        const methodsItem = {
+          name: nodeName,
+          params: node.params,
+          body: node.body,
+          async:node.async
+        }
+        this.methodsBodyMap.set(nodeName,methodsItem)
       }
-      this.methodsBodyMap.set(nodeName,methodsItem)
     })
   }
 
-  dealWithCode(){
-    const callback = async (item) =>{
-      let code = '';
-      const computedItem = this.methodsBodyMap.get(item);
-      const paramsCode = await computedItem?.params.map(node => generate.default(node));
-      const bodyCode = await generate.default(computedItem?.body)
-      code = `const ${computedItem?.name} = (${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code}\n`
-      return code
-    }
-
-    return Promise.all(Array.from(this.methodsKey).map(callback))
-  }
-
   async render() {
-     let code = ''; 
-     const methodsCode = await this.dealWithCode()
-     if(methodsCode && methodsCode.length>0){
-        methodsCode.forEach((codeItem:any)=>{
-          if(codeItem) code+=codeItem 
-        })
-     }
-     return code
+    Array.from(this.methodsKey).forEach(item=>{
+      const methodsItem = this.methodsBodyMap.get(item);
+      if(!methodsItem)return;
+      let fn = arrowFunctionExpression(methodsItem.params,methodsItem.body,methodsItem.async);
+      this.newAst.program.body.push(variableFunction(methodsItem.name,fn))
+    })
   }
 
 }

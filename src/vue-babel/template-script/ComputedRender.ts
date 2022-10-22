@@ -1,5 +1,5 @@
-import generate from "@babel/generator";
-
+import t from '@babel/types';
+import {createFnVariable,arrowFunctionExpression } from './utils';
 interface FunctionVariable {
   isReadWrite: boolean;
   name: string;
@@ -12,19 +12,21 @@ export default class ComputedRender{
   computedKey: Set<string> = new Set();
   computeBodyMap: Map<string, FunctionVariable> = new Map();
   options: any;
-
-  constructor(computeNode:Array<any>,options:any) {
-    this.computeNode = computeNode;
-    this.options = options;
+  newAst:t.File;
+  
+  constructor(_computeNode:Array<any>,_options:any,_newAst:t.File) {
+    this.computeNode = _computeNode;
+    this.options = _options;
+    this.newAst = _newAst;
     this.init()
   }
 
   init() { 
     this.computeNode.forEach(node => {
       if (node.type != 'SpreadElement') {
-        console.log(node.type)
         const nodeName = node.key.name;
         this.computedKey.add(nodeName);
+        // 判断是否是传入的get和set方法
         const isReadWrite = node.type === 'ObjectProperty'
         const computedItem = {
           isReadWrite,
@@ -41,33 +43,18 @@ export default class ComputedRender{
     return this.computedKey.has(key)
   }
 
-  dealWithCode(){
-    const callback = async (item) =>{
-      let code = '';
-      const computedItem = this.computeBodyMap.get(item);
-      const bodyCode = await generate.default(computedItem?.body)
-      if (computedItem?.isReadWrite) {
-
-        code+=`const ${computedItem?.name} = computed(${bodyCode.code});\n`
-      } else {
-        const paramsCode = await computedItem?.params.map(node => generate.default(node));
-        code += `const ${computedItem?.name} = computed((${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code})\n`
-      }
-      return code
-    }
-    return Promise.all(Array.from(this.computedKey).map(callback))
-  }
-
   async render() {
-    let code ='';
-    let computedCode = await  this.dealWithCode()
-    if(computedCode.length>0){
-      computedCode.forEach(codeItem=>{
-        if(codeItem){
-          code+=codeItem
-        }
-      })
-    }
-    return code
+    this.computedKey.forEach(item=>{
+      const computedItem = this.computeBodyMap.get(item);
+      let computedNode:t.VariableDeclaration;
+      if(!computedItem) return
+      if (computedItem.isReadWrite) {
+        computedNode = createFnVariable(computedItem.name,'computed',[computedItem.body])
+      }else{
+        let fn = arrowFunctionExpression(computedItem.params,computedItem.body)
+        computedNode = createFnVariable(computedItem.name,'computed',[fn])
+      }
+      this.newAst.program.body.push(computedNode)
+    })
   }
 }

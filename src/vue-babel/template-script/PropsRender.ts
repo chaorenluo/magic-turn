@@ -1,13 +1,15 @@
-import generate from "@babel/generator";
-
+import t from '@babel/types';
+import {createFnVariable } from './utils';
 export default class PropsRender{
   propsNode: Array<any> = [];
   propsKey: Set<string> = new Set();
   isArrayExpression=false;
   options: any;
-  constructor(propsNode:any,options:any) {
+  newAst:t.File;
+  constructor(propsNode:any,options:any,_newAst:t.File) {
     this.propsNode = propsNode;
     this.options = options;
+    this.newAst = _newAst;
     this.init();
   }
 
@@ -30,8 +32,7 @@ export default class PropsRender{
 
 
   async render() {
-    let propsCode = await generate.default(this.propsNode)
-    const code = `const props = defineProps(${propsCode.code});\n`
-    return code
+    const propsNode = createFnVariable('props','defineProps',[this.propsNode])
+    this.newAst.program.body.push(propsNode)
   }
 }
