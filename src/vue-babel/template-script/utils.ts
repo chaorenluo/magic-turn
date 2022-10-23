@@ -83,10 +83,25 @@ export const createArrayExpression = (arr:Array<string>) =>{
   return t.arrayExpression(stringLiteralArr)
 }
 
-export const createRunFunction = (calleeName:string,params=[]) =>{
+export const createRunFunction = (calleeName:string,params:Array<any>=[]) =>{
   let callee = t.identifier(calleeName)
   const callExpression = t.callExpression(callee,params)
  return  t.expressionStatement(callExpression)
+}
+
+export const createReturnStatement = (params:Array<any>|any) =>{
+  let returnStatementNode:t.ReturnStatement;
+  if(Array.isArray(params)){
+    let objectProperty:Array<t.ObjectProperty> = []
+    params.forEach(item=>{
+      let identifier =  t.identifier(item)
+      objectProperty.push(t.objectProperty(identifier,identifier))
+    })
+    returnStatementNode = t.returnStatement(t.objectExpression(objectProperty))
+  }else{
+    returnStatementNode =t.returnStatement(t.identifier(params))
+  }
+  return returnStatementNode
 }
 
 export enum OptionsApi {

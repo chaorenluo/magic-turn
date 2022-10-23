@@ -16,7 +16,7 @@ export default class PropsRender{
   hasPropsKey(key:string): boolean {
     return this.propsKey.has(key)
   }
-
+ 
   init() {
     this.isArrayExpression = this.propsNode.type === 'ArrayExpression'
     if(this.isArrayExpression){

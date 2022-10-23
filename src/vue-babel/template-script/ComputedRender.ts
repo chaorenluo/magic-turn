@@ -43,7 +43,7 @@ export default class ComputedRender{
     return this.computedKey.has(key)
   }
 
-  async render() {
+  render() {
     this.computedKey.forEach(item=>{
       const computedItem = this.computeBodyMap.get(item);
       let computedNode:t.VariableDeclaration;

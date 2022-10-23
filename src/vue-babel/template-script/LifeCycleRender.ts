@@ -1,5 +1,6 @@
-import generate from "@babel/generator";
-import {modifyCycleName} from './utils'
+
+import t from '@babel/types';
+import {modifyCycleName,createRunFunction, arrowFunctionExpression, variableFunction} from './utils'
 
 interface CycleVariable {
   name: string;
@@ -28,10 +29,12 @@ export default class LifeCycleAnalysis {
 
   cycleKey: Set<string> = new Set<string>();
   cycleBodyMap: Map<string, CycleVariable> = new Map();
+  newAst:t.File;
   options: any;
 
-  constructor(options:any) {
+  constructor(options:any,_newAst:t.File) {
     this.options = options;
+    this.newAst = _newAst;
   }
 
   static isCycle(nodeName:CycleTypeV3Type): boolean {
@@ -51,34 +54,44 @@ export default class LifeCycleAnalysis {
   }
 
   dealWithCode(){
-    const callback = async(item) =>{
-      let code = '';
-      const computedItem = this.cycleBodyMap.get(item);
-      if (computedItem && ruleOuType.includes(computedItem?.name)) {
-        const paramsCode = await computedItem?.params.map(node => generate.default(node));
-        const bodyCode = await generate.default(computedItem?.body)
+    // const callback = async(item) =>{
+    //   let code = '';
+    //   const computedItem = this.cycleBodyMap.get(item);
+    //   if (computedItem && ruleOuType.includes(computedItem?.name)) {
+    //     const paramsCode = await computedItem?.params.map(node => generate.default(node));
+    //     const bodyCode = await generate.default(computedItem?.body)
 
-        code+=`const ${computedItem?.name} = (${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code} \n ${computedItem?.name}();\n`
-      } else {
-        const paramsCode = await computedItem?.params.map(node => generate.default(node));
-        const bodyCode = await generate.default(computedItem?.body)
-        code = `${computedItem?.name}((${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code})\n` 
+    //     code+=`const ${computedItem?.name} = (${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code} \n ${computedItem?.name}();\n`
+    //   } else {
+    //     const paramsCode = await computedItem?.params.map(node => generate.default(node));
+    //     const bodyCode = await generate.default(computedItem?.body)
+    //     code = `${computedItem?.name}((${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code})\n` 
+    //   }
+    //   return code
+    // }
+
+    // return Promise.all(Array.from(this.cycleKey).map(callback));
+    Array.from(this.cycleKey).forEach(item=>{
+      const cycleItem = this.cycleBodyMap.get(item);
+      let cycleNode:Array<t.ExpressionStatement | t.VariableDeclaration> = [] ;
+      if(!cycleItem) return;
+
+      if (cycleItem && ruleOuType.includes(cycleItem.name)) {
+        let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body)
+        let variableNode = variableFunction(cycleItem.name,arrowFn);
+        let runNode = createRunFunction(cycleItem.name)
+        cycleNode.push(...[variableNode,runNode])
+      }else{
+       let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body)
+       let runNode = createRunFunction(cycleItem.name,[arrowFn])
+       cycleNode.push(runNode)
       }
-      return code
-    }
-
-    return Promise.all(Array.from(this.cycleKey).map(callback));
+      this.newAst.program.body.push(...cycleNode)
+    })
   }
 
   async render() {
-    let cycleCode = await this.dealWithCode();
-    let code ='';
-    if(cycleCode && cycleCode.length>0){
-      cycleCode.forEach(codeItem=>{
-        if(codeItem) code+=codeItem+'\n'
-      })
-    }
-    return code
+    this.dealWithCode();
   }
 
 
