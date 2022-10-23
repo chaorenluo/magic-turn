@@ -81,6 +81,20 @@ const scriptRender = async (code: string, options) => {
         return computedReplace()
       }
     }
+    const vuexStore = () =>{
+      if(vuexRender && vuexRender.stateHookMap.has(name)){
+        const store = vuexRender.stateHookMap.get(name)
+        const {prefix,value} = store;
+        if(prefix){
+          newNode.object = t.identifier(prefix)
+        }else{
+          newNode = newNode.property;
+          newNode.name = value;
+          newNode.loc.name = value;
+        }
+        return true;
+      }
+    }
     const dataProps = () => {
       if (propsRender && propsRender?.hasPropsKey(name)) {
         newNode.object = t.identifier('props')
@@ -91,7 +105,7 @@ const scriptRender = async (code: string, options) => {
       newNode = newNode.property;
       return true
     }
-    let callback = [templateLiteral, dataReactive, mixinReactive, mixinCompute, dataCompute, dataProps, end]
+    let callback = [templateLiteral, dataReactive, mixinReactive, mixinCompute, dataCompute,vuexStore, dataProps, end]
     for (let index = 0; index < callback.length; index++) {
       const element = callback[index];
       if (element()) {
@@ -195,12 +209,13 @@ const scriptRender = async (code: string, options) => {
   ].forEach(item => {
     item && item.render()
   })
-  let newCode = await generate.default(newAst)
-  console.log(newCode.code)
+  let newCode = await generate.default(newAst).code;
+
   return {
     newAst,
     newCode,
     importRender,
+    vuexRender,
     dataRender,
     computedRender,
     methodsRender,

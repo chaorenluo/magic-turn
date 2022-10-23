@@ -8,7 +8,7 @@
         <span class="flex1 ellipsis mr-md">
           【{{ v.game_name }}】{{ v.server }}-{{ v.goods_type }}
         </span>
-        <span class="orange shrink0 price">{{ cn_price_tag }} {{ number_format(v.order_amount) }}</span>
+        <span v-show="cn_price_tag  || user.name" class="orange shrink0 price">{{ cn_price_tag }}  {{user}} {{ number_format(v.order_amount) }}</span>
       </li>
     </slide-show>
   </div>
@@ -17,12 +17,13 @@
 <script>
 import { number_format } from '~/utils/utils';
 import slideShow from "~/components/plugin/slideShow";
-import { mapGetters } from "vuex";
+import { mapGetters,mapState } from "vuex";
 
 export default {
   props: ['data', 'type'],
   components: { slideShow },
   computed: {
+    ...mapState(['user']),
     ...mapGetters({
       cn_price_tag: 'common/cn_price_tag'
     }),
@@ -35,32 +36,9 @@ export default {
   },
   methods: {
     number_format
+  },
+  mounted(){
+    console.log(this.cn_price_tag,this.user)
   }
 };
 </script>
-
-<style lang="stylus">
-  .latest-trade {
-    height: 48px;
-    padding: 0 $padding-md;
-    overflow: hidden;
-    font-size: $mfs;
-    color: $fc1;
-    background: #ebeef4;
-    border-radius: 10px;
-    line-height 1;
-    .shrink0{
-      flex-shrink 0;
-    }
-    .com-slide-show {
-      height: 48px;
-      text-align: left;
-      li {
-        line-height: 48px;
-      }
-    }
-    .price {
-      font-weight: 400;
-    }
-  }
-</style>

@@ -28,7 +28,7 @@ const vueRender = async (html: any,options:any) => {
   const contentHtml = DomUtils.getOuterHTML(dom, {
     encodeEntities:'utf8'
   });
-  // console.log('contentHtml---',contentHtml)
+  console.log('contentHtml---',contentHtml)
 }
 
 export default {

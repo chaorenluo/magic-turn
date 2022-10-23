@@ -11,12 +11,18 @@ export const templateRender = async (dom: any, scriptData: any) => {
 
   const RenderCallbacks: Array<Function> = [];
  
-  const { dataRender,mixinRender} = scriptData;
+  const { dataRender,mixinRender,vuexRender} = scriptData;
 
-  const addPrefixIdentifier = (path: any, name: string) => {
-    const identifierNode = path.node;
-    let node = t.memberExpression(t.identifier(name), identifierNode)
-    path.replaceWith(node) 
+  const addPrefixIdentifier = (path: any, replaceData:  {prefix:string,value:string}) => {
+    const {prefix,value} = replaceData;
+    if(prefix){
+      const identifierNode = path.node;
+      let node = t.memberExpression(t.identifier(prefix), identifierNode)
+      path.replaceWith(node) 
+    }else{
+      let node = t.identifier(value)
+      path.replaceWith(node) 
+    }
   }
 
 
@@ -44,7 +50,7 @@ export const templateRender = async (dom: any, scriptData: any) => {
                 ...data,
                 ast,
                 path,
-                replaceName: dataRender.options.dataName
+                replaceData:{value:'',prefix: dataRender.options.dataName}
               })
             }
             if (mixinRender && mixinRender.reactiveMap.has(name)) {
@@ -52,7 +58,15 @@ export const templateRender = async (dom: any, scriptData: any) => {
                 ...data,
                 ast,
                 path,
-                replaceName: mixinRender.reactiveMap.get(name)
+                replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name)}
+              })
+            }
+            if(vuexRender && vuexRender.stateHookMap.has(name)){
+              interpolationList.push({
+                ...data,
+                ast,
+                path,
+                replaceData:vuexRender.stateHookMap.get(name)
               })
             }
           }
@@ -61,7 +75,7 @@ export const templateRender = async (dom: any, scriptData: any) => {
     }
   
     interpolationList.forEach((value) => {
-      addPrefixIdentifier(value.path, value.replaceName)
+      addPrefixIdentifier(value.path, value.replaceData)
     })
     RenderCallbacks.push(async () => {
       const callback = async(item:any) => {
@@ -90,20 +104,26 @@ export const templateRender = async (dom: any, scriptData: any) => {
           if (dataRender && dataRender.hasReactiveKey(name)) {
             nodeIdentifier.push({
               path,
-              replaceName: dataRender.options.dataName
+              replaceData:{value:'',prefix: dataRender.options.dataName}
             })
           }
           if (mixinRender && mixinRender.reactiveMap.has(name)) {
             nodeIdentifier.push({
               path,
-              replaceName: mixinRender.reactiveMap.get(name)
+              replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name)}
+            })
+          }
+          if(vuexRender && vuexRender.stateHookMap.has(name)){
+            nodeIdentifier.push({
+              path,
+              replaceData: vuexRender.stateHookMap.get(name)
             })
           }
         }
       }
     })
     nodeIdentifier.forEach(pathItem => {
-      addPrefixIdentifier(pathItem.path, pathItem.replaceName)
+      addPrefixIdentifier(pathItem.path, pathItem.replaceData)
     })
     RenderCallbacks.push(async () => {
       let attribsCode = await generate.default(ast);
