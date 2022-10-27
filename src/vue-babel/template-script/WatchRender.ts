@@ -1,7 +1,9 @@
 import parser from "@babel/parser";
 import { createRunFunction, arrowFunctionExpression, OptionsApi } from './utils';
 import t from '@babel/types';
-import DataAnalysis from './DataRender'
+import DataRender from './DataRender'
+import VuexRender from './VuexRender'
+import ComputedRender from './ComputedRender'
 
 const { parse } = parser;
 
@@ -10,15 +12,19 @@ export default class WatchRender {
   objectWatch: Array<any> = [];
   objectProperty: Array<any> = [];
   watchKey: Set<string> = new Set();
-  dataAnalysis: DataAnalysis;
+  dataRender: DataRender;
   options: any;
   newAst: t.File;
+  vuexRender: VuexRender;
+  computedRender:ComputedRender
 
-  constructor(watchNode: any, dataAnalysis: DataAnalysis, options: any, _newAst: t.File) {
+  constructor(watchNode: any, dataRender: DataRender, _vuexRender:VuexRender,_computedRender:ComputedRender, options: any, _newAst: t.File) {
     this.watchNode = watchNode;
-    this.dataAnalysis = dataAnalysis;
+    this.dataRender = dataRender;
     this.options = options;
     this.newAst = _newAst;
+    this.vuexRender = _vuexRender;
+    this.computedRender = _computedRender;
     this.init()
   }
 
@@ -37,14 +43,36 @@ export default class WatchRender {
     return this.watchKey.has(key);
   }
 
-  addPrefix(key: any) {
-    let watchName = key.name ? key.name : key.value;
-    if (this.dataAnalysis.hasReactiveKey(watchName.split('.')[0])) {
-      watchName = `state.${watchName}`
+  getPrefix(watchName: string) {
+    let firstNode = watchName.split('.')[0];
+    if (this.dataRender && this.dataRender.hasReactiveKey(firstNode)) {
+      return `state.${watchName}`
     }
-    return parse(watchName, {
-      sourceType: 'module'
-    }).program.body[0]?.expression
+    if (this.computedRender && this.computedRender.hasComputedKey(firstNode)) {
+      return `${watchName}.value`
+    }
+    if (this.vuexRender && this.vuexRender.stateHookMap.has(firstNode)) {
+      const { prefix, value } = this.vuexRender.stateHookMap.get(firstNode);
+      if(prefix)  return `${prefix}.${watchName}`
+      let arr = watchName.split('.');
+      arr[0] = value;
+      return arr.join('.');
+    }
+  }
+
+  addPrefix(key: any) {
+    try {
+      let watchName = key.name ? key.name : key.value;
+      let prefix = this.getPrefix(watchName)
+      if (prefix) {
+        watchName = prefix
+      }
+      return parse(watchName, {
+        sourceType: 'module'
+      }).program.body[0]?.expression
+    } catch (error) {
+      console.error('addPrefix----',key)
+    }
   }
 
   createWatchNode(watchItem: any, watchParams?: any) {
@@ -71,8 +99,8 @@ export default class WatchRender {
       value.properties.forEach((v: any) => {
         if (v.key.name == "handler") {
           watchItem = {
-            params: v.value.params,
-            body: v.value.body,
+            params: v.params,
+            body: v.body,
             key: node.key
           }
         } else {

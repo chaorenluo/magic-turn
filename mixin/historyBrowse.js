@@ -1,5 +1,5 @@
 // 历史浏览
-// import { mapState } from 'vuex';
+import { mapState } from 'vuex';
 import * as localstorage from '~/utils/localstorage';
 
 export default {
@@ -9,7 +9,7 @@ export default {
     };
   },
   computed: {
-    // ...mapState(['user'])
+    ...mapState(['user'])
   },
   methods: {
     // 根据用户登入状态，加载历史列表

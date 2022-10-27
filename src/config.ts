@@ -7,5 +7,6 @@ export const options = {
   mixinAliasVal: path.join(__dirname, '../mixin'),
   piniaAliasKey: '@store',
   piniaAliasVal: path.join(__dirname, '../store'),
+  output:path.join(__dirname, '../newVue')
 }
 

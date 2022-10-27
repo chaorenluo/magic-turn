@@ -46,7 +46,7 @@ const scriptRender = async (code: string, options) => {
     return node
   }
 
-  const replaceNodeName = (property, name, newNode) => {
+  const replaceNodeName = (property, name, newNode,path) => {
     const computedReplace = () => {
       newNode.object = newNode.property;
       newNode.property = t.identifier('value')
@@ -166,7 +166,7 @@ const scriptRender = async (code: string, options) => {
           propsRender = new PropsRender(path.node.value, options, newAst)
           break;
         case OptionsApi.Watch:
-          watchRender = new WatchRender(path.node.value, dataRender, options, newAst)
+          watchRender = new WatchRender(path.node.value, dataRender, vuexRender,computedRender,options, newAst)
           break;
         default:
           break;
@@ -177,7 +177,7 @@ const scriptRender = async (code: string, options) => {
         const property = path.node.property;
         const name = property.name;
         let newNode = path.node;
-        newNode = replaceNodeName(property, name, newNode);
+        newNode = replaceNodeName(property, name, newNode,path);
 
         if (name && name.indexOf('$') > -1) {
           // 处理refs语句

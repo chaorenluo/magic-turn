@@ -1,44 +1,66 @@
-
 <template>
-  <div class="latest-trade flex align-center">
-    <b class="shrink0">最新成交</b>
-    <span v-if="!data" class="ml-md fc3">加載中...</span>
-    <slide-show v-else-if="list.length" class="ml-md">
-      <li v-for="(v, i) in list" :key="i" class="flex justify-between align-center">
-        <span class="flex1 ellipsis mr-md">
-          【{{ v.game_name }}】{{ v.server }}-{{ v.goods_type }}
-        </span>
-        <span v-show="cn_price_tag  || user.name" class="orange shrink0 price">{{ cn_price_tag }}  {{user}} {{ number_format(v.order_amount) }}</span>
-      </li>
-    </slide-show>
+  <div v-show="device.isAndroid && flow_show && appTab && !is_cn" class="app-tab">
+    <a href="javascript:;" @click="openApp">
+      <img src="~/assets/images/index/tab.png" alt="下載App，訊息不漏接">
+    </a>
+    <span class="close" @click="setAppTab(false)" />
   </div>
 </template>
 
 <script>
-import { number_format } from '~/utils/utils';
-import slideShow from "~/components/plugin/slideShow";
-import { mapGetters,mapState } from "vuex";
+import { mapMutations, mapGetters } from 'vuex';
+import inApp from '~/mixin/inApp';
 
 export default {
-  props: ['data', 'type'],
-  components: { slideShow },
+  mixins: [inApp],
+  data() {
+    const routeName = this.$route.name;
+    return {
+      flow_show: ['index', 'game-type', 'mall-list-gid', 'mall-detail-mid'].includes(routeName)
+    };
+  },
   computed: {
-    ...mapState(['user']),
     ...mapGetters({
-      cn_price_tag: 'common/cn_price_tag'
-    }),
-    list() {
-      if (this.data) {
-        return this.data[this.type];
-      }
-      return [];
-    }
+      is_cn: 'common/is_cn'
+    })
   },
   methods: {
-    number_format
-  },
-  mounted(){
-    console.log(this.cn_price_tag,this.user)
+    ...mapMutations({
+      setAppTab: 'common/setAppTab'
+    })
   }
 };
 </script>
+
+<style lang="stylus">
+.show-app-tab {
+  padding-top 168px!important
+  .hk-idx-head {
+    top 88px
+  }
+}
+.game-app-tab {
+  padding-top 288px!important
+  .channel-hd {
+    top 88px!important
+  }
+  .game-tab {
+    top 176px!important
+  }
+}
+.app-tab {
+  position fixed
+  top 0
+  z-index 101
+  height: .88rem;fixedtop0z-index101height
+  .close{
+    position absolute
+    left 20px
+    top 20px
+    z-index 1
+    display block
+    width 50px
+    height 50px
+  }
+}
+</style>

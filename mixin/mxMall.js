@@ -2,9 +2,9 @@ import { mapMutations } from 'vuex';
 
 export default {
   methods: {
-    // ...mapMutations({
-    //   addNewFocus: 'addNewFocus'
-    // }),
+    ...mapMutations({
+      addNewFocus: 'addNewFocus'
+    }),
     getGameLink(v) {
       const buy_status = this.buy_status;
       return buy_status ? `/mall/detail/exclusive?id=${v.id}&complete=1` : `/mall/detail/${v.id}`;

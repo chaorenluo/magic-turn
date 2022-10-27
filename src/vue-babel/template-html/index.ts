@@ -15,10 +15,15 @@ export const templateRender = async (dom: any, scriptData: any) => {
 
   const addPrefixIdentifier = (path: any, replaceData:  {prefix:string,value:string}) => {
     const {prefix,value} = replaceData;
-    if(prefix){
+    if (prefix) {
       const identifierNode = path.node;
+      if(!t.isIdentifier(identifierNode)) return
+     try {
       let node = t.memberExpression(t.identifier(prefix), identifierNode)
       path.replaceWith(node) 
+     } catch (error) {
+      console.log("替换节点错误")
+     }
     }else{
       let node = t.identifier(value)
       path.replaceWith(node) 
@@ -140,14 +145,14 @@ export const templateRender = async (dom: any, scriptData: any) => {
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
       let firstChar = key.charAt(0);
-      if (firstChar === 'v' || firstChar === ':' || firstChar==='@') replaceAttribsVal(attribs, key);
+      if (key.indexOf('v-')>-1 || firstChar === ':' || firstChar==='@') replaceAttribsVal(attribs, key);
     })
   }
-  if (scriptData) {
-    DomUtils.filter((elem:any) => {
+  if (scriptData && dom) {
+    DomUtils.filter((elem: any) => {
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs)
-      replaceInterpolation(elem)
+      replaceInterpolation(elem) 
     }, dom, true)
     await Promise.all(RenderCallbacks.map(callback => callback()))
   }

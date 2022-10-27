@@ -12,11 +12,6 @@ export default {
       submitting: false
     }
   },
-  computed: {
-    s1() {
-      return 111
-    }
-  },
   methods: {
     // 上传图片
     onRead(file) {

@@ -20,6 +20,7 @@ export default class VuexRender {
   piniaRender:PiniaRender;
   gettersModules = new Set();
   mutationsModules = new Set();
+  defaultStoreName = "index"
 
   constructor(_astNode: t.File, _options: any) {
     this.astNode = _astNode;
@@ -61,7 +62,7 @@ export default class VuexRender {
       firstItem.elements.forEach((item) => {
         let key = (item as t.StringLiteral).value;
         let status = this.isFile(key);
-        let name = status ? key : "index";
+        let name = status ? key : this.defaultStoreName
         this.piniaModules.add(name);
         this.stateHookMap.set(key, {
           prefix:'',
@@ -92,6 +93,7 @@ export default class VuexRender {
       }
     });
   }
+  
 
   dealWithMutations(args: Arguments) {
     args.forEach((item) => {
@@ -99,9 +101,14 @@ export default class VuexRender {
         item.properties.forEach((v) => {
           let value = v.value.value as string;
           let keyName = v.key.name;
-          let mutationsName = value.split('/')[0];
-          let mutationsFn = value.split('/')[1];
-          this.piniaModules.add(mutationsName);
+          let valueArr = value.split('/');
+          let mutationsName = getPiniaVariable(this.defaultStoreName)
+          let mutationsFn = value;
+          if (valueArr.length > 1) {
+             mutationsName = valueArr[0];
+             mutationsFn = valueArr[1];
+          }
+          this.piniaModules.add(valueArr.length > 1 ? mutationsName : this.defaultStoreName);
           if(mutationsFn === keyName){
             this.stateHookMap.set(mutationsFn, {
               prefix:getPiniaVariable(mutationsName),
@@ -199,6 +206,6 @@ export default class VuexRender {
       },
     });
     this.insertPiniaModules(this.astNode.program)
-    this.piniaRender = await piniaStart(this.options,Array.from(this.piniaModules) as Array<string>)
+    this.piniaRender = await piniaStart(this.options,Array.from(this.piniaModules) as Array<string>,this.code)
   }
 }
