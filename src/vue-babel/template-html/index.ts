@@ -7,7 +7,7 @@ import { DomUtils } from "htmlparser2";
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
 
-export const templateRender = async (dom: any, scriptData: any) => {
+export const templateRender = async (dom: any, scriptData: any,html) => {
 
   const RenderCallbacks: Array<Function> = [];
  
@@ -17,12 +17,16 @@ export const templateRender = async (dom: any, scriptData: any) => {
     const {prefix,value} = replaceData;
     if (prefix) {
       const identifierNode = path.node;
-      if(!t.isIdentifier(identifierNode)) return
-     try {
+      if (!t.isIdentifier(identifierNode)) return
       let node = t.memberExpression(t.identifier(prefix), identifierNode)
-      path.replaceWith(node) 
-     } catch (error) {
-      console.log("替换节点错误")
+      try {
+        if (t.isObjectProperty(path.parent)) {
+          path.parent.value = node;
+        } else {
+          path.replaceWith(node)    
+        }
+      } catch (error) {
+       throw new Error(error);
      }
     }else{
       let node = t.identifier(value)
@@ -49,21 +53,20 @@ export const templateRender = async (dom: any, scriptData: any) => {
         Identifier(path: any) {
           if (!path.parent.property || path.key === 'object') {
             let name = path.node.name;
-  
-            if (dataRender && dataRender.hasReactiveKey(name)) {
-              interpolationList.push({
-                ...data,
-                ast,
-                path,
-                replaceData:{value:'',prefix: dataRender.options.dataName}
-              })
-            }
             if (mixinRender && mixinRender.reactiveMap.has(name)) {
               interpolationList.push({
                 ...data,
                 ast,
                 path,
                 replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name)}
+              })
+            }
+            if (dataRender && dataRender.hasReactiveKey(name)) {
+              interpolationList.push({
+                ...data,
+                ast,
+                path,
+                replaceData:{value:'',prefix: dataRender.options.dataName}
               })
             }
             if(vuexRender && vuexRender.stateHookMap.has(name)){

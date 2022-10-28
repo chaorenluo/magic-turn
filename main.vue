@@ -1,66 +1,30 @@
 <template>
-  <div v-show="device.isAndroid && flow_show && appTab && !is_cn" class="app-tab">
-    <a href="javascript:;" @click="openApp">
-      <img src="~/assets/images/index/tab.png" alt="下載App，訊息不漏接">
-    </a>
-    <span class="close" @click="setAppTab(false)" />
+  <div class="udesk-im ">
+    <van-nav-bar v-if="!isApp || $is_new_ios_app" title="在線客服" left-arrow @click-left="quiteUdesk" />
+    <div v-if="custom_im_open" class="udesk-switch" style="background: transparent;" @click="quiteUdesk" />
+    <div class="contact8591 hide" />
+    <div class="udesk-target" />
   </div>
 </template>
-
 <script>
-import { mapMutations, mapGetters } from 'vuex';
+import customIM from '~/mixin/customIM';
 import inApp from '~/mixin/inApp';
 
 export default {
-  mixins: [inApp],
-  data() {
-    const routeName = this.$route.name;
-    return {
-      flow_show: ['index', 'game-type', 'mall-list-gid', 'mall-detail-mid'].includes(routeName)
-    };
-  },
-  computed: {
-    ...mapGetters({
-      is_cn: 'common/is_cn'
-    })
-  },
+  mixins: [customIM, inApp],
   methods: {
-    ...mapMutations({
-      setAppTab: 'common/setAppTab'
-    })
+    quiteUdesk() {
+      this.hideCustomIM();
+      this.$goBack('');
+    }
+  },
+  mounted() {
+    this.customIMPage(true);
+    this.customIM(true);
+  },
+  beforeDestroy() {
+    this.customIMPage(false);
   }
 };
-</script>
 
-<style lang="stylus">
-.show-app-tab {
-  padding-top 168px!important
-  .hk-idx-head {
-    top 88px
-  }
-}
-.game-app-tab {
-  padding-top 288px!important
-  .channel-hd {
-    top 88px!important
-  }
-  .game-tab {
-    top 176px!important
-  }
-}
-.app-tab {
-  position fixed
-  top 0
-  z-index 101
-  height: .88rem;fixedtop0z-index101height
-  .close{
-    position absolute
-    left 20px
-    top 20px
-    z-index 1
-    display block
-    width 50px
-    height 50px
-  }
-}
-</style>
+</script>

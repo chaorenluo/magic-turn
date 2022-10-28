@@ -24,6 +24,7 @@
     "@babel/traverse": "^7.19.0",
     "@types/fs-extra": "^9.0.13",
     "fs-extra": "^10.1.0",
+    "glob": "^8.0.3",
     "htmlparser2": "^8.0.1",
     "parse5": "^7.1.1"
   }

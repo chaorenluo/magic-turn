@@ -25,26 +25,25 @@ export default class MixinRender{
     this.newAst = _newAst;
     const {mixinAliasKey,mixinAliasVal } = this.options;
     this.mixinList = _mixinList;
-    for (let index = 0; index < this.mixinList.length; index++) {
-      const element = this.mixinList[index];
-      const _this = MixinRender.recordMixin.get(element);
-      if (_this) {
-        return _this;
-      }
-    }
+    // for (let index = 0; index < this.mixinList.length; index++) {
+    //   const element = this.mixinList[index];
+    //   const _this = MixinRender.recordMixin.get(element);
+    //   if (_this) {
+    //     console.log("***************",_this)
+    //     return _this;
+    //   }
+    // }
     importGlobal.forEach(item => {
       item.specifiers.forEach(specifier => {
         const name = specifier.local.name;
         if (this.mixinList.includes(name)) {
-          const value = item.source.value.replace('mixin','');
+          const sourceVal = item.source.value;
+          const value = sourceVal.replace('mixin', '');
           const file = path.join(mixinAliasVal, value.replace(mixinAliasKey, '')).replace('.js', '') + '.js' as string;
-          if(!MixinRender.recordMixin.has(name)) {
-            this.filesList.push({
-              path: file,
-              name
-            })
-            MixinRender.recordMixin.set(name,this)
-          } 
+          this.filesList.push({
+            path: file,
+            name
+          })
         }
       })
     })
@@ -91,18 +90,19 @@ export default class MixinRender{
   }
 
   async initMixin() {
-    let fileCallback = async (item:any) => {
+    let fileCallback = async (item: any) => {
+      let filePath = path.resolve(item.path);
       try {
-        let fileCode = await readFile(path.resolve(item.path), { encoding: 'utf-8' })
-        return {fileCode,name:item.name}
+        let fileCode = await readFile(filePath, { encoding: 'utf-8' })
+        return {fileCode,name:item.name,filePath}
       } catch (err) {
-        throw new Error('请检查mixin别名路径是否正确')
+        throw new Error(`请检查mixin别名路径是否正确${filePath}`)
      }
     }
     let scriptCallback = async (codeItem: any) => {
       let mixinOptions = { ...this.options, dataName: `${this.options.dataName}_${codeItem.name}` }
       const scriptCode = await scriptRender(codeItem.fileCode, mixinOptions);
-      return scriptCode
+      return {...scriptCode,filePath:codeItem.filePath}
     }
     this.codeList = await Promise.all(this.filesList.map(fileCallback));
     this.nodeList = await Promise.all(this.codeList.map(scriptCallback));

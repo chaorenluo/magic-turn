@@ -19,7 +19,7 @@ const { parse } = parser;
 
 
 
-const scriptRender = async (code: string, options) => {
+const scriptRender = async (code: string, options,html) => {
   let newAst = parse('', {
     sourceType: 'module'
   })
@@ -46,7 +46,7 @@ const scriptRender = async (code: string, options) => {
     return node
   }
 
-  const replaceNodeName = (property, name, newNode,path) => {
+  const replaceNodeName = (property, name, newNode, path) => {
     const computedReplace = () => {
       newNode.object = newNode.property;
       newNode.property = t.identifier('value')
@@ -56,12 +56,6 @@ const scriptRender = async (code: string, options) => {
       if (property.type === 'TemplateLiteral') {
         let type = loopProperty(path)
         newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier(options.dataName)
-        return true;
-      }
-    }
-    const dataReactive = () => {
-      if (dataRender && dataRender?.hasReactiveKey(name)) {
-        newNode.object = t.identifier(options.dataName);
         return true;
       }
     }
@@ -76,18 +70,24 @@ const scriptRender = async (code: string, options) => {
         return computedReplace()
       }
     }
+    const dataReactive = () => {
+      if (dataRender && dataRender?.hasReactiveKey(name)) {
+        newNode.object = t.identifier(options.dataName);
+        return true;
+      }
+    }
     const dataCompute = () => {
       if (computedRender && computedRender?.hasComputedKey(name)) {
         return computedReplace()
       }
     }
-    const vuexStore = () =>{
+    const vuexStore = () => {
       if(vuexRender && vuexRender.stateHookMap.has(name)){
         const store = vuexRender.stateHookMap.get(name)
-        const {prefix,value} = store;
+        const { prefix, value } = store;
         if(prefix){
           newNode.object = t.identifier(prefix)
-        }else{
+        } else {
           newNode = newNode.property;
           newNode.name = value;
           newNode.loc.name = value;
@@ -105,7 +105,7 @@ const scriptRender = async (code: string, options) => {
       newNode = newNode.property;
       return true
     }
-    let callback = [templateLiteral, dataReactive, mixinReactive, mixinCompute, dataCompute,vuexStore, dataProps, end]
+    let callback = [templateLiteral,  mixinReactive, mixinCompute,dataReactive, dataCompute,vuexStore, dataProps, end]
     for (let index = 0; index < callback.length; index++) {
       const element = callback[index];
       if (element()) {
@@ -120,7 +120,7 @@ const scriptRender = async (code: string, options) => {
   })
 
   // 转义vuex
-  vuexRender = new VuexRender(ast, options);
+  vuexRender = new VuexRender(ast, options,html);
   await vuexRender.analysisAst()
 
   // 转义mixin

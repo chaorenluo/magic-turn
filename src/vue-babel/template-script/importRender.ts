@@ -13,7 +13,7 @@ const ImportRender = (newAst:t.File) => {
 
     importGlobal: [],
     
-    vueApiImports: new Set<string>(),
+    vueApiImports: new Set<string>('reactive'),
   
     globalApi: new Set<string>(),
 
@@ -127,7 +127,7 @@ const ImportRender = (newAst:t.File) => {
       }
     },
   
-     render() {
+    render() {
       this.renderImports();
       this.renderImportGlobal()
       this.renderGlobalVariable()

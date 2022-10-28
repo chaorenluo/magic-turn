@@ -21,13 +21,13 @@ export default class VuexRender {
   gettersModules = new Set();
   mutationsModules = new Set();
   defaultStoreName = "index"
+  html = ''
 
-  constructor(_astNode: t.File, _options: any) {
+  constructor(_astNode: t.File, _options: any,_this) {
     this.astNode = _astNode;
     this.options = _options;
+    this.html = _this;
   }
-
-  updateName() {}
 
   isFile(path: string) {
     let filePath = `${this.options.piniaAliasVal}/${path}.js`;
@@ -64,17 +64,25 @@ export default class VuexRender {
         let status = this.isFile(key);
         let name = status ? key : this.defaultStoreName
         this.piniaModules.add(name);
-        this.stateHookMap.set(key, {
+        let data = {
           prefix:'',
           value:getPiniaVariable(name)
-        });
+        }
+        if (!status) {
+          data = {
+            prefix:getPiniaVariable(name),
+            value:''
+          }
+        }
+
+        this.stateHookMap.set(key, data);
       });
     }
   }
 
   dealWithGetters(args: Arguments) {
     args.forEach((item) => {
-      if (item.type === 'ObjectExpression') {
+      if ( t.isObjectExpression(item)) {
         item.properties.forEach((v) => {
           let keyName = v.key.name;
           let value = v.value.value as string;
@@ -97,7 +105,7 @@ export default class VuexRender {
 
   dealWithMutations(args: Arguments) {
     args.forEach((item) => {
-      if (item.type === 'ObjectExpression') {
+      if (t.isObjectExpression(item)) {
         item.properties.forEach((v) => {
           let value = v.value.value as string;
           let keyName = v.key.name;
@@ -107,6 +115,9 @@ export default class VuexRender {
           if (valueArr.length > 1) {
              mutationsName = valueArr[0];
              mutationsFn = valueArr[1];
+          }
+          if (value === 'my/resetDealMessageList') {
+            console.log(this.html)
           }
           this.piniaModules.add(valueArr.length > 1 ? mutationsName : this.defaultStoreName);
           if(mutationsFn === keyName){
