@@ -104,6 +104,18 @@ export const createReturnStatement = (params:Array<any>|any) =>{
   return returnStatementNode
 }
 
+export const createMemberExpression = (arr:Array<any>):t.MemberExpression  | t.Identifier =>{
+  if(arr.length <=1){
+   return  t.identifier(arr[0])
+  }
+  let val = arr.splice(0,1)
+  return t.memberExpression(createMemberExpression(arr),t.identifier(val[0]));
+}
+
+export const createCallExpression = (callee:t.MemberExpression | t.Identifier,params:any):t.CallExpression =>{
+  return t.callExpression(callee,params);
+}
+
 export enum OptionsApi {
   Data = 'data',
   Computed = 'computed',

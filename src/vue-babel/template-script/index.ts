@@ -39,7 +39,7 @@ const scriptRender = async (code: string, options,html) => {
     }
     return loopProperty(path.context.parentPath)
   }
-
+  // 创建全局对象获取值
   const createSetupState = () => {
     importRender.addVueApi('getCurrentInstance')
     let node = t.memberExpression(t.callExpression(t.identifier('getCurrentInstance'), []), t.identifier('setupState'));
@@ -87,7 +87,7 @@ const scriptRender = async (code: string, options,html) => {
         const { prefix, value } = store;
         if(prefix){
           newNode.object = t.identifier(prefix)
-        } else {
+        } else if(value) {
           newNode = newNode.property;
           newNode.name = value;
           newNode.loc.name = value;
@@ -172,7 +172,7 @@ const scriptRender = async (code: string, options,html) => {
           break;
       }
     },
-    MemberExpression(path) {
+    MemberExpression(path) { 
       if (path.node.object.type === 'ThisExpression') {
         const property = path.node.property;
         const name = property.name;
@@ -201,6 +201,12 @@ const scriptRender = async (code: string, options,html) => {
           }
         }
         path.replaceWith(newNode)
+      }
+    },
+    VariableDeclarator(path){
+      const node =path.node;
+      if(t.isThisExpression(node.init)){
+        node.init = createSetupState();
       }
     }
 

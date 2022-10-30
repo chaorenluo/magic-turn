@@ -8,12 +8,14 @@ const vueApi = {
 
 type vueApiType = keyof typeof vueApi;
 
+const defaultVueApi = ['reactive']
+
 const ImportRender = (newAst:t.File) => {
   return  {
 
     importGlobal: [],
     
-    vueApiImports: new Set<string>('reactive'),
+    vueApiImports: new Set<string>(defaultVueApi),
   
     globalApi: new Set<string>(),
 

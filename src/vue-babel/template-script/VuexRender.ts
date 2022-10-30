@@ -1,6 +1,6 @@
 import traverse from "@babel/traverse";
 import parser from "@babel/parser";
-import { OptionsApi, modifyCycleName,VuexFn,getPiniaName,getPiniaVariable } from "./utils";
+import { OptionsApi, modifyCycleName,VuexFn,getPiniaName,getPiniaVariable,createMemberExpression,createCallExpression } from "./utils";
 import t from "@babel/types";
 import fs from "fs";
 import { piniaStart } from "../template-Pinia/index";
@@ -116,9 +116,6 @@ export default class VuexRender {
              mutationsName = valueArr[0];
              mutationsFn = valueArr[1];
           }
-          if (value === 'my/resetDealMessageList') {
-            console.log(this.html)
-          }
           this.piniaModules.add(valueArr.length > 1 ? mutationsName : this.defaultStoreName);
           if(mutationsFn === keyName){
             this.stateHookMap.set(mutationsFn, {
@@ -161,6 +158,22 @@ export default class VuexRender {
       }
     })
   }
+  // 处理this.$store.dispatch | commit 
+  analysisCallExpression(path:any){
+    const args = path.node.arguments
+    const val = args[0].value;
+    if(!val) return;
+    let piniaPath = val.split('/');
+    let key = piniaPath.length>1 ? piniaPath[0] : this.defaultStoreName;
+    this.piniaModules.add(key);
+    if(piniaPath.length<=1){
+      piniaPath.unshift(key)
+    }
+    piniaPath[0] = getPiniaVariable(piniaPath[0]);
+    const params = args.slice(1,args.length);
+    let callExpression = createCallExpression(createMemberExpression(piniaPath.reverse()),params);
+    path.replaceWith(callExpression)
+  }
 
   createPiniaImport(importName:string,piniaName:string){
     let hookStore = t.identifier(importName);
@@ -192,6 +205,7 @@ export default class VuexRender {
     })
     imports.concat(hooks).forEach(item=>body.splice(index,0,item));
   }
+  
 
   insertPiniaHooks(program:t.Program){
     let body = program.body
@@ -215,6 +229,14 @@ export default class VuexRender {
             break;
         }
       },
+      CallExpression(path){
+        if(path.node.callee.property){
+          let fnName = path.node.callee.property.name;
+          if(['commit','dispatch'].includes(fnName)){
+            _this.analysisCallExpression(path)
+          }
+        }
+      }
     });
     this.insertPiniaModules(this.astNode.program)
     this.piniaRender = await piniaStart(this.options,Array.from(this.piniaModules) as Array<string>,this.code)
