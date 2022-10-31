@@ -5,7 +5,6 @@ import fs from 'fs'
 import fse from 'fs-extra'
 import babelRender from './vue-babel'
 import { options } from './config';
-import glob from 'glob'
 
 const { scriptRender, vueRender } = babelRender;
 

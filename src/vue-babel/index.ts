@@ -1,7 +1,6 @@
 import  { scriptRender } from './template-script'
 import {templateRender} from './template-html'
 import { Parser, DomHandler, DomUtils } from "htmlparser2";
-import { Console } from 'console';
 const vueRender = async (html: any,options:any) => {
 
   let templateMap = new Map();
@@ -28,9 +27,7 @@ const vueRender = async (html: any,options:any) => {
     scriptNode.data = scriptData.newCode;
   }
 
-  await templateRender(templateNode, scriptData,html).catch(res => {
-    console.log("************")
-  })
+  await templateRender(templateNode, scriptData,html)
   const contentHtml = DomUtils.getOuterHTML(dom, {
     encodeEntities:'utf8'
   });

@@ -1,5 +1,4 @@
-
-import fs from 'fs';
+import fse from 'fs-extra'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import generate from "@babel/generator";
@@ -23,27 +22,30 @@ export default class MixinRender{
   constructor(_mixinList:Array<string>,importGlobal:any,_options:any,_newAst:t.File) {
     this.options = _options;
     this.newAst = _newAst;
-    const {mixinAliasKey,mixinAliasVal } = this.options;
+    const {alias } = this.options;
     this.mixinList = _mixinList;
-    // for (let index = 0; index < this.mixinList.length; index++) {
-    //   const element = this.mixinList[index];
-    //   const _this = MixinRender.recordMixin.get(element);
-    //   if (_this) {
-    //     console.log("***************",_this)
-    //     return _this;
-    //   }
-    // }
     importGlobal.forEach(item => {
       item.specifiers.forEach(specifier => {
         const name = specifier.local.name;
         if (this.mixinList.includes(name)) {
           const sourceVal = item.source.value;
-          const value = sourceVal.replace('mixin', '');
-          const file = path.join(mixinAliasVal, value.replace(mixinAliasKey, '')).replace('.js', '') + '.js' as string;
-          this.filesList.push({
-            path: file,
-            name
-          })
+          const pathVal = sourceVal.split("/")
+          const aliasItem = pathVal[0];
+          const aliasPath = alias[pathVal[0]]
+          let fileVal = sourceVal;
+          if (aliasPath) {
+            fileVal = sourceVal.replace(aliasItem, aliasPath);
+          }
+          const file = fileVal.replace('.js', '') + '.js' as string;
+          let status = fse.existsSync(file)
+          if (status) {
+            this.filesList.push({
+              path: file,
+              name
+            }) 
+          } else {
+            console.log("该mixin文件路径找不到----",file)
+          }
         }
       })
     })
@@ -92,12 +94,8 @@ export default class MixinRender{
   async initMixin() {
     let fileCallback = async (item: any) => {
       let filePath = path.resolve(item.path);
-      try {
-        let fileCode = await readFile(filePath, { encoding: 'utf-8' })
-        return {fileCode,name:item.name,filePath}
-      } catch (err) {
-        throw new Error(`请检查mixin别名路径是否正确${filePath}`)
-     }
+      let fileCode =  fse.readFileSync(filePath, { encoding: 'utf-8' })
+      return {fileCode,name:item.name,filePath}
     }
     let scriptCallback = async (codeItem: any) => {
       let mixinOptions = { ...this.options, dataName: `${this.options.dataName}_${codeItem.name}` }

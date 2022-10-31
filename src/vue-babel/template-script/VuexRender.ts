@@ -30,7 +30,7 @@ export default class VuexRender {
   }
 
   isFile(path: string) {
-    let filePath = `${this.options.piniaAliasVal}/${path}.js`;
+    let filePath = `${this.options.piniaStore.pathVal}/${path}.js`;
     return fs.existsSync(filePath);
   }
   
@@ -178,7 +178,7 @@ export default class VuexRender {
   createPiniaImport(importName:string,piniaName:string){
     let hookStore = t.identifier(importName);
     let importSpecifier = t.importSpecifier(hookStore, hookStore)
-    let stringLiteral = t.stringLiteral(`'${this.options.piniaAliasKey}/${piniaName}'`) 
+    let stringLiteral = t.stringLiteral(`'${this.options.piniaStore.aliasPrefix}/${piniaName}'`) 
     let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
     return importDeclaration
   }

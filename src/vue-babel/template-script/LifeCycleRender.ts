@@ -54,23 +54,6 @@ export default class LifeCycleAnalysis {
   }
 
   dealWithCode(){
-    // const callback = async(item) =>{
-    //   let code = '';
-    //   const computedItem = this.cycleBodyMap.get(item);
-    //   if (computedItem && ruleOuType.includes(computedItem?.name)) {
-    //     const paramsCode = await computedItem?.params.map(node => generate.default(node));
-    //     const bodyCode = await generate.default(computedItem?.body)
-
-    //     code+=`const ${computedItem?.name} = (${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code} \n ${computedItem?.name}();\n`
-    //   } else {
-    //     const paramsCode = await computedItem?.params.map(node => generate.default(node));
-    //     const bodyCode = await generate.default(computedItem?.body)
-    //     code = `${computedItem?.name}((${paramsCode?.map(item => item.code).join(',')}) => ${bodyCode?.code})\n` 
-    //   }
-    //   return code
-    // }
-
-    // return Promise.all(Array.from(this.cycleKey).map(callback));
     Array.from(this.cycleKey).forEach(item=>{
       const cycleItem = this.cycleBodyMap.get(item);
       let cycleNode:Array<t.ExpressionStatement | t.VariableDeclaration> = [] ;
