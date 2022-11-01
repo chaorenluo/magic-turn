@@ -16,6 +16,7 @@ export default class VuexRender {
   astNode:t.File;
   options = {};
   stateHookMap = new Map();
+  mutationsExportNode = new Set();
   piniaModules = new Set<string>();
   piniaRender:PiniaRender;
   gettersModules = new Set();
@@ -46,7 +47,8 @@ export default class VuexRender {
 
   createMutations(methName: string, methBody: string) { 
     let methBodyArr = methBody.split('/');
-    let memberExpression = t.memberExpression(t.identifier(methBodyArr[0]), t.identifier(methBodyArr[1]))
+
+    let memberExpression =  t.memberExpression(t.thisExpression(),t.identifier(methBodyArr[1]))
     let spreadElement = t.spreadElement(t.identifier('args'));
     let callExpression = t.callExpression(memberExpression,[spreadElement])
     let returnStatement = t.returnStatement(callExpression)
@@ -117,14 +119,17 @@ export default class VuexRender {
              mutationsFn = valueArr[1];
           }
           this.piniaModules.add(valueArr.length > 1 ? mutationsName : this.defaultStoreName);
-          if(mutationsFn === keyName){
-            this.stateHookMap.set(mutationsFn, {
-              prefix:getPiniaVariable(mutationsName),
-              value:''
-            });
-          }else{
-            this.createMutations(keyName, value);
+          if(mutationsFn != keyName){
+            this.createMutations(keyName, value);   
           }
+          this.mutationsExportNode.add({
+            name: mutationsFn,
+            node:createMemberExpression([mutationsFn,getPiniaVariable(mutationsName)])
+          });
+          this.stateHookMap.set(mutationsFn, {
+            prefix:getPiniaVariable(mutationsName),
+            value:''
+          });
         });
       }
     });
@@ -203,17 +208,22 @@ export default class VuexRender {
       imports.push(importDeclaration);
       hooks.push(variableDeclaration)
     })
+
     imports.concat(hooks).forEach(item=>body.splice(index,0,item));
   }
   
-
-  insertPiniaHooks(program:t.Program){
-    let body = program.body
-    let index = body.length-1;
+  addMethodStore(methodsNode: t.ObjectProperty) {
+    if (methodsNode && methodsNode.node && this.mutationsModules.size > 0) {
+      let properties = methodsNode.node.value.properties;
+      this.mutationsModules.forEach((item) => {
+        properties.splice(1,0,item)
+      })
+    }
   }
 
   async analysisAst() {
     const _this = this;
+    let methodsNode;
     traverse.default(this.astNode, {
       ObjectProperty(path) {
         const properties = path.node.value.properties;
@@ -223,6 +233,7 @@ export default class VuexRender {
             _this.analysisComputed(properties);
             break;
           case OptionsApi.Methods:
+              methodsNode = path;
               _this.analysisMethods(properties)
             break;
           default:
@@ -238,6 +249,7 @@ export default class VuexRender {
         }
       }
     });
+    this.addMethodStore(methodsNode)
     this.insertPiniaModules(this.astNode.program)
     this.piniaRender = await piniaStart(this.options,Array.from(this.piniaModules) as Array<string>,this.code)
   }

@@ -47,6 +47,8 @@ const scriptRender = async (code: string, options,html) => {
   }
 
   const replaceNodeName = (property, name, newNode, path) => {
+    // 提取页面中使用了mixin的变量
+    mixinRender &&mixinRender.mixinAdvance(name)
     const computedReplace = () => {
       newNode.object = newNode.property;
       newNode.property = t.identifier('value')
@@ -61,7 +63,8 @@ const scriptRender = async (code: string, options,html) => {
     }
     const mixinReactive = () => {
       if (mixinRender && mixinRender.reactiveMap.has(name)) {
-        newNode.object = t.identifier(mixinRender.reactiveMap.get(name))
+        const data = mixinRender.reactiveMap.get(name)
+        newNode.object = t.identifier(data.name)
         return true;
       }
     }
@@ -82,7 +85,7 @@ const scriptRender = async (code: string, options,html) => {
       }
     }
     const vuexStore = () => {
-      if(vuexRender && vuexRender.stateHookMap.has(name)){
+      if (vuexRender && vuexRender.stateHookMap.has(name)) {
         const store = vuexRender.stateHookMap.get(name)
         const { prefix, value } = store;
         if(prefix){
@@ -211,15 +214,22 @@ const scriptRender = async (code: string, options,html) => {
     }
 
   });
-  [importRender, mixinRender, propsRender, dataRender, computedRender, methodsRender, watchRender, lifeCycleRender
-  ].forEach(item => {
-    item && item.render()
-  })
-  let newCode = await generate.default(newAst).code;
+
+
+  const render = async() => {
+    [importRender, mixinRender, propsRender, dataRender, computedRender, methodsRender, watchRender, lifeCycleRender
+    ].forEach(item => {
+      item && item.render()
+    })
+    let newCode =  await generate.default(newAst).code;
+    return {
+      newCode,
+      newAst
+    }
+  }
 
   return {
-    newAst,
-    newCode,
+    render,
     importRender,
     vuexRender,
     dataRender,

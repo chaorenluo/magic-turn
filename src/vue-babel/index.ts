@@ -24,10 +24,14 @@ const vueRender = async (html: any,options:any) => {
   let scriptData = {}
   if (scriptNode) {
     scriptData = await scriptRender(scriptNode.data, options,html);
-    scriptNode.data = scriptData.newCode;
   }
 
-  await templateRender(templateNode, scriptData,html)
+  await templateRender(templateNode, scriptData, html)
+  if (scriptNode) {
+    // scriptNode && (scriptNode.data = await scriptData.render().newCode);
+    const { newCode } = await scriptData.render()
+    scriptNode.data = newCode;
+  }
   const contentHtml = DomUtils.getOuterHTML(dom, {
     encodeEntities:'utf8'
   });

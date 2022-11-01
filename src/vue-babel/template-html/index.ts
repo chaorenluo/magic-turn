@@ -53,12 +53,13 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
         Identifier(path: any) {
           if (!path.parent.property || path.key === 'object') {
             let name = path.node.name;
+            mixinRender && mixinRender.mixinAdvance(name)
             if (mixinRender && mixinRender.reactiveMap.has(name)) {
               interpolationList.push({
                 ...data,
                 ast,
                 path,
-                replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name)}
+                replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name).name}
               })
             }
             if (dataRender && dataRender.hasReactiveKey(name)) {
@@ -108,7 +109,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       Identifier(path: any) {
         if (!path.parent.property || path.key === 'object') {
           let name = path.node.name;
-
+          mixinRender && mixinRender.mixinAdvance(name)
           if (dataRender && dataRender.hasReactiveKey(name)) {
             nodeIdentifier.push({
               path,
@@ -118,7 +119,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
           if (mixinRender && mixinRender.reactiveMap.has(name)) {
             nodeIdentifier.push({
               path,
-              replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name)}
+              replaceData:{value:'',prefix: mixinRender.reactiveMap.get(name).name}
             })
           }
           if(vuexRender && vuexRender.stateHookMap.has(name)){

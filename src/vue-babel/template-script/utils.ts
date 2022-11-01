@@ -53,7 +53,7 @@ export const createFnVariable = (variable:Array<string> | string,fnName:string,p
     let objectPropertyArr:Array<t.ObjectProperty> = [];
     variable.forEach(item=>{
       let identifier = t.identifier(item);
-      objectPropertyArr.push(t.objectProperty(identifier,identifier));
+      objectPropertyArr.push(t.objectProperty(identifier,identifier,false,true));
     }) 
     id =t.objectPattern(objectPropertyArr)
 
@@ -93,9 +93,14 @@ export const createReturnStatement = (params:Array<any>|any) =>{
   let returnStatementNode:t.ReturnStatement;
   if(Array.isArray(params)){
     let objectProperty:Array<t.ObjectProperty> = []
-    params.forEach(item=>{
-      let identifier =  t.identifier(item)
-      objectProperty.push(t.objectProperty(identifier,identifier))
+    params.forEach(item => {
+      if (typeof item === 'string') {
+        let identifier =  t.identifier(item)
+        objectProperty.push(t.objectProperty(identifier,identifier,false,true)) 
+      } else if (item.name && item.node) {
+        let identifier =  t.identifier(item.name)
+        objectProperty.push(t.objectProperty(identifier,item.node)) 
+      }
     })
     returnStatementNode = t.returnStatement(t.objectExpression(objectProperty))
   }else{
