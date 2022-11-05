@@ -132,8 +132,8 @@ const ImportRender = (newAst:t.File) => {
     render() {
       this.renderImports();
       this.renderImportGlobal()
-      this.renderGlobalVariable()
       this.renderRouter()
+      this.renderGlobalVariable()
       this.renderEmit()
       this.renderRef()
     }

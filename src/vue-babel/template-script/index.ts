@@ -13,6 +13,7 @@ import ImportRender from './ImportRender'
 import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
 import VuexRender from './VuexRender'
+import NuxtRender from "../template-nuxt";
 import { OptionsApi } from './utils'
 const { parse } = parser;
 
@@ -32,6 +33,7 @@ const scriptRender = async (code: string, options,html) => {
   let watchRender: WatchRender;
   let mixinRender: MixinRender;
   let vuexRender: VuexRender;
+  let nuxtRender:NuxtRender
   let importRender = ImportRender(newAst);
   const loopProperty = (path) => {
     if (!path.node.property) {
@@ -122,6 +124,7 @@ const scriptRender = async (code: string, options,html) => {
     sourceType: 'module'
   })
 
+
   // 转义vuex
   vuexRender = new VuexRender(ast, options,html);
   await vuexRender.analysisAst()
@@ -141,6 +144,9 @@ const scriptRender = async (code: string, options,html) => {
     }
   })
   mixinRender && await mixinRender.initMixin()
+
+    // 转义nuxt语法
+  nuxtRender = new NuxtRender(ast, options)
 
   // 收集全局变量
   importRender.collectGlobalVariable(ast)

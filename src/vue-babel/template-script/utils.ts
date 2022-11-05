@@ -89,8 +89,7 @@ export const createRunFunction = (calleeName:string,params:Array<any>=[]) =>{
  return  t.expressionStatement(callExpression)
 }
 
-export const createReturnStatement = (params:Array<any>|any) =>{
-  let returnStatementNode:t.ReturnStatement;
+export const createObjectExpression = (params:Array<any>|any)=>{
   if(Array.isArray(params)){
     let objectProperty:Array<t.ObjectProperty> = []
     params.forEach(item => {
@@ -102,11 +101,14 @@ export const createReturnStatement = (params:Array<any>|any) =>{
         objectProperty.push(t.objectProperty(identifier,item.node)) 
       }
     })
-    returnStatementNode = t.returnStatement(t.objectExpression(objectProperty))
+    return t.objectExpression(objectProperty)
   }else{
-    returnStatementNode =t.returnStatement(t.identifier(params))
+    return t.identifier(params)
   }
-  return returnStatementNode
+}
+
+export const createReturnStatement = (params:Array<any>|any) =>{
+  return t.returnStatement(createObjectExpression(params))
 }
 
 export const createMemberExpression = (arr:Array<any>):t.MemberExpression  | t.Identifier =>{
@@ -117,7 +119,7 @@ export const createMemberExpression = (arr:Array<any>):t.MemberExpression  | t.I
   return t.memberExpression(createMemberExpression(arr),t.identifier(val[0]));
 }
 
-export const createCallExpression = (callee:t.MemberExpression | t.Identifier,params:any):t.CallExpression =>{
+export const createCallExpression = (callee:t.MemberExpression | t.Identifier | t.Expression,params:any):t.CallExpression =>{
   return t.callExpression(callee,params);
 }
 
