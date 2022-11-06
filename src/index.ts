@@ -38,7 +38,7 @@ const collectPinia = (piniaRender) => {
   if (!piniaRender || !piniaRender.piniaNodeList) return
   piniaRender.piniaNodeList.forEach((item) => {
     if (piniaMap.has(item.filePath)) return
-    let filePath = item.filePath.replace(options.entranceDir, options.output)
+    let filePath = item.filePath.replaceAll('\\','/').replace(options.entranceDir, options.output)
     piniaMap.set(filePath,{piniaNode:item})
   })
 }
@@ -47,7 +47,7 @@ let collectMixins = (mixinRender) => {
   if (!mixinRender) return 
   mixinRender.nodeList.forEach((item) => {
     if (mixinMap.has(item.filePath)) return
-    let filePath = item.filePath.replace(options.entranceDir, options.output)
+    let filePath = item.filePath.replaceAll('\\','/').replace(options.entranceDir, options.output)
     mixinMap.set(filePath,{mixinCode:item.newCode})
   })
 }
@@ -67,11 +67,12 @@ const createMixins = () => {
 
 const createFile = () => {
   fileMap.forEach((item,key) => {
+    
     let filePath = key.replace(options.entranceDir, options.output)
     fse.outputFileSync(filePath, item.contentHtml);
   })
 }
-
+console.log(__dirname)
 const init = async (path: string) => {
 
   let fileArr = getAllDirByFilename(path,options.compileDir).filter(item=>isVue(item))
@@ -79,7 +80,6 @@ const init = async (path: string) => {
   let callback = async (filePath: string) => {
     const code = await readFile(filePath, { encoding: 'utf-8' });
     const fileData = await vueRender(code, options)
-
     fileMap.set(filePath, fileData)
     collectPinia(fileData?.scriptData?.vuexRender?.piniaRender)
     collectMixins(fileData?.scriptData?.mixinRender)

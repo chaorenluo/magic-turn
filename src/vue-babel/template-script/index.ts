@@ -146,7 +146,7 @@ const scriptRender = async (code: string, options,html) => {
   mixinRender && await mixinRender.initMixin()
 
     // 转义nuxt语法
-  nuxtRender = new NuxtRender(ast, options)
+  nuxtRender = new NuxtRender(ast, options,importRender)
 
   // 收集全局变量
   importRender.collectGlobalVariable(ast)
