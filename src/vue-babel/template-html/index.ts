@@ -3,6 +3,7 @@ import parser from "@babel/parser";
 import generate from "@babel/generator";
 import t from '@babel/types';
 import { DomUtils } from "htmlparser2";
+import {getRefName} from '../template-script/utils'
 
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
@@ -146,8 +147,13 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     }
   }
 
+  const updateRefName =(attribs:any,key:string) =>{
+    if(key === 'ref') attribs[key] = getRefName(attribs[key])
+  }
+
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
+      updateRefName(attribs,key)
       let firstChar = key.charAt(0);
       if (key.indexOf('v-')>-1 || firstChar === ':' || firstChar==='@') replaceAttribsVal(attribs, key);
     })

@@ -4,7 +4,7 @@ import path from 'path'
 import generate from "@babel/generator";
 import t from '@babel/types';
 import  { scriptRender } from './index'
-import {arrowFunctionExpression,variableFunction,createReturnStatement,createFnVariable,modifyCycleName } from './utils';
+import {arrowFunctionExpression,variableFunction,createReturnStatement,createFnVariable,modifyCycleName,filterImport } from './utils';
 
 export default class MixinRender{
   options: any;
@@ -88,7 +88,7 @@ export default class MixinRender{
       let methodBody:Array<any> = []
       newAst.program.body.forEach(item=>{
         if(t.isImportDeclaration(item)){
-          importDeclaration.push(item);
+          filterImport(item.source.value) && importDeclaration.push(item);
         }else{
           methodBody.push(item);
         }
@@ -102,6 +102,7 @@ export default class MixinRender{
       const file = t.file(program)
       nodeItem.newAst = file;
       nodeItem.newCode =  await generate.default(file).code
+
     }
     await Promise.all(filesList.map(callback))
 

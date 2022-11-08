@@ -23,6 +23,7 @@
     "@babel/parser": "^7.19.0",
     "@babel/traverse": "^7.19.0",
     "@types/fs-extra": "^9.0.13",
+    "dom-serializer": "^2.0.0",
     "fs-extra": "^10.1.0",
     "glob": "^8.0.3",
     "htmlparser2": "^8.0.1",

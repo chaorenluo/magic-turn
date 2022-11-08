@@ -72,14 +72,14 @@ const createFile = () => {
     fse.outputFileSync(filePath, item.contentHtml);
   })
 }
-console.log(__dirname)
+
 const init = async (path: string) => {
 
   let fileArr = getAllDirByFilename(path,options.compileDir).filter(item=>isVue(item))
 
   let callback = async (filePath: string) => {
     const code = await readFile(filePath, { encoding: 'utf-8' });
-    const fileData = await vueRender(code, options)
+    const fileData = await vueRender(code, options,filePath)
     fileMap.set(filePath, fileData)
     collectPinia(fileData?.scriptData?.vuexRender?.piniaRender)
     collectMixins(fileData?.scriptData?.mixinRender)

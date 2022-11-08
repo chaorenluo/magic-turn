@@ -183,7 +183,7 @@ export default class VuexRender {
   createPiniaImport(importName:string,piniaName:string){
     let hookStore = t.identifier(importName);
     let importSpecifier = t.importSpecifier(hookStore, hookStore)
-    let stringLiteral = t.stringLiteral(`'${this.options.piniaStore.aliasPrefix}/${piniaName}'`) 
+    let stringLiteral = t.stringLiteral(`${this.options.piniaStore.aliasPrefix}/${piniaName}`) 
     let importDeclaration = t.importDeclaration([importSpecifier], stringLiteral);
     return importDeclaration
   }

@@ -123,6 +123,23 @@ export const createCallExpression = (callee:t.MemberExpression | t.Identifier | 
   return t.callExpression(callee,params);
 }
 
+export const getRefName= (name:string) =>{
+  return name+'_ref';
+}
+
+export const filterImport = (name:string) =>{
+  let fillterName = ['vuex'];
+  let status  = true;
+  for (let index = 0; index < fillterName.length; index++) {
+    const element = fillterName[index];
+    if(name.indexOf(element) >-1){
+      status=false;
+      break;
+    }
+  }
+  return status
+}
+
 export enum OptionsApi {
   Data = 'data',
   Computed = 'computed',

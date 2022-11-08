@@ -192,6 +192,7 @@ const scriptRender = async (code: string, options,html) => {
           // 处理refs语句
           if (name === '$refs') {
             path.parent.object = path.parent.property
+            path.parent.object.name = path.parent.object.name+'_ref'
             path.parent.property = t.identifier('value')
             importRender.addVueApi('ref');
             importRender.addRefKey(path.parent.object.name)

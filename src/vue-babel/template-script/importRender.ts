@@ -1,5 +1,5 @@
 
-import { modifyCycleName,createImport,createFnVariable,createArrayExpression } from './utils';
+import { modifyCycleName,createImport,createFnVariable,createArrayExpression,filterImport} from './utils';
 import t from '@babel/types';
 const vueApi = {
   "$emit": "emit",
@@ -99,7 +99,9 @@ const ImportRender = (newAst:t.File) => {
      renderImportGlobal() {
       if (this.importGlobal.length > 0) {
         this.importGlobal.forEach(item=>{
-          newAst.program.body.push(item)
+          if(filterImport(item.source.value)){
+            newAst.program.body.push(item)
+          }
         })
       }
     },
