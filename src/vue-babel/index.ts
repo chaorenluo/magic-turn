@@ -12,6 +12,17 @@ const decomposeTemp = (html:string) =>{
     }
   }
  
+  const setImportEnd = (str:string) =>{
+    let arr = str.split('\r\n');
+    for (let index = 0; index < arr.length; index++) {
+      let element = arr[index];
+      if(element.indexOf('@import')>-1 && !element.endsWith(';')){
+        element = element.replace('.styl','').replace('.stylus','')
+        arr[index] = element +';'
+      }
+    }
+    return arr.join('\r\n')
+  }
 
 const vueRender = async (html: any,options:any,filePath) => {
   let htmlData =  decomposeTemp(html)
@@ -31,6 +42,15 @@ const vueRender = async (html: any,options:any,filePath) => {
     }
     if (!templateMap.has('template') && elem.name === 'template') {
       templateMap.set('template',elem)
+    }
+    if (elem.name === 'style') {
+      const lang = elem.attribs['lang']
+     if(lang && lang==='stylus'){
+      elem.attribs['lang'] = 'stylus';
+      let content = elem.children[0].data;
+      elem.children[0].data = setImportEnd(content);
+
+     }
     }
   }, dom, true)
   let scriptNode = htmlData.script;
