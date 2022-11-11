@@ -48,7 +48,8 @@ export default class LifeCycleAnalysis {
     const cycleItem = {
       name: nodeName,
       params: cycleNode.params,
-      body:cycleNode.body
+      body:cycleNode.body,
+      async:cycleNode.async
     }
     this.cycleBodyMap.set(nodeName, cycleItem);
   }
@@ -60,12 +61,12 @@ export default class LifeCycleAnalysis {
       if(!cycleItem) return;
 
       if (cycleItem && ruleOuType.includes(cycleItem.name)) {
-        let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body)
+        let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body,cycleItem.async)
         let variableNode = variableFunction(cycleItem.name,arrowFn);
         let runNode = createRunFunction(cycleItem.name)
         cycleNode.push(...[variableNode,runNode])
       }else{
-       let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body)
+       let arrowFn = arrowFunctionExpression(cycleItem.params,cycleItem.body,cycleItem.async)
        let runNode = createRunFunction(cycleItem.name,[arrowFn])
        cycleNode.push(runNode)
       }

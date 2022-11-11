@@ -37,7 +37,9 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
 
 
   const removeAdapterVal = (code) => {
-    return code.replace(adapterVariable,'').replace(';','');
+    let newCode = code.replaceAll(adapterVariable,'')
+    newCode = newCode.replaceAll(';','')
+    return newCode;
   }
 
   const loopInterpolation = (elem: any) => {
@@ -91,7 +93,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       const callback = async(item:any) => {
         let value = await generate.default(item.ast);
         let code = removeAdapterVal(value.code)
-        elem.data = elem.data.replaceAll(item.oldValue,code)
+        elem.data =elem.data.replaceAll(item.oldValue,code);
       }
      await  Promise.all(interpolationList.map(callback))
     })
@@ -104,7 +106,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     if (code.charAt(0) === '{' && code.charAt(code.length - 1) === '}') {
       code = `${adapterVariable}${code}`
     }
-    ast = parse(code)
+    ast = parse(code,)
     const nodeIdentifier: Array<any> = [];
     traverse.default(ast, {
       Identifier(path: any) {
@@ -137,7 +139,8 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     })
     RenderCallbacks.push(async () => {
       let attribsCode = await generate.default(ast);
-      attribs[key] = removeAdapterVal(attribsCode.code)
+
+      attribs[key] = removeAdapterVal(attribsCode.code);
     })
   }
 
@@ -151,6 +154,37 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     if(key === 'ref') attribs[key] = getRefName(attribs[key])
   }
 
+  const updateKey = (elem:any) =>{
+    const attribs = elem.attribs;
+    if(attribs && attribs[':key']){
+      if(!attribs['v-for']){
+        delete  attribs[':key'];
+      }
+    }
+  }
+
+  const addForKey = (elem:any) =>{
+    const attribs = elem.attribs;
+    if(attribs && attribs['v-for']){
+        if(!attribs[':key']){
+          let data = attribs['v-for'];
+          let arr = data.substring(data.indexOf('(')+1,data.indexOf(')')).split(',');
+          if(arr.length === 2) elem.attribs[':Key']= arr[1]
+        }
+    }
+  }
+
+  const updateSlot =(elem:any) =>{
+    const attribs = elem.attribs;
+    if(attribs && (attribs['slot'] || attribs['v-slot'])){
+      elem.name = 'template';
+      let slotName =  attribs['slot'] || attribs['v-slot']
+      attribs[`#${slotName}`] = ''
+      attribs['slot'] && delete attribs['slot'];
+      attribs['v-slot'] && delete attribs['v-slot'];
+    }
+  }
+
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
       updateRefName(attribs,key)
@@ -160,6 +194,9 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
   }
   if (scriptData && dom) {
     DomUtils.filter((elem: any) => {
+      updateKey(elem)
+      addForKey(elem)
+      updateSlot(elem)
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs)
       replaceInterpolation(elem) 

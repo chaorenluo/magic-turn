@@ -16,9 +16,18 @@ const decomposeTemp = (html:string) =>{
     let arr = str.split('\r\n');
     for (let index = 0; index < arr.length; index++) {
       let element = arr[index];
-      if(element.indexOf('@import')>-1 && !element.endsWith(';')){
-        element = element.replace('.styl','').replace('.stylus','')
-        arr[index] = element +';'
+      if(element.indexOf('@import')>-1){
+        if(element.indexOf('.stylus')>-1){
+          element = element.replace('.stylus','')
+        }else if(element.indexOf('.styl')>-1){
+          element = element.replace('.stylus','')
+        }
+        // element = element.replace('.styl','').replace('.stylus','')
+        // element = element
+        if(!element.endsWith(';')){
+          element =  element +';'
+        }
+        arr[index] = element
       }
     }
     return arr.join('\r\n')
