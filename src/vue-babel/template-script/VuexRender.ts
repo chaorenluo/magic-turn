@@ -112,22 +112,23 @@ export default class VuexRender {
           let value = v.value.value as string;
           let keyName = v.key.name;
           let valueArr = value.split('/');
-          let mutationsName = getPiniaVariable(this.defaultStoreName)
+          let mutationsName = this.defaultStoreName;
           let mutationsFn = value;
           if (valueArr.length > 1) {
              mutationsName = valueArr[0];
              mutationsFn = valueArr[1];
           }
           this.piniaModules.add(valueArr.length > 1 ? mutationsName : this.defaultStoreName);
+           mutationsName = getPiniaVariable(mutationsName)
           if(mutationsFn != keyName){
             this.createMutations(keyName, value);   
           }
           this.mutationsExportNode.add({
             name: mutationsFn,
-            node:createMemberExpression([mutationsFn,getPiniaVariable(mutationsName)])
+            node:createMemberExpression([mutationsFn,mutationsName])
           });
           this.stateHookMap.set(mutationsFn, {
-            prefix:getPiniaVariable(mutationsName),
+            prefix:mutationsName,
             value:''
           });
         });

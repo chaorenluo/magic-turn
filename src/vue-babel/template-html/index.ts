@@ -2,8 +2,13 @@ import traverse from "@babel/traverse";
 import parser from "@babel/parser";
 import generate from "@babel/generator";
 import t from '@babel/types';
-import { DomUtils } from "htmlparser2";
-import {getRefName} from '../template-script/utils'
+import {render} from 'dom-serializer';
+import { DomUtils,parseDocument,ElementType } from "htmlparser2";
+
+import {getRefName,getCompoentEl} from '../template-script/utils'
+
+
+
 
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
@@ -12,7 +17,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
 
   const RenderCallbacks: Array<Function> = [];
  
-  const { dataRender,mixinRender,vuexRender} = scriptData;
+  const { dataRender,mixinRender,vuexRender,importRender} = scriptData;
 
   const addPrefixIdentifier = (path: any, replaceData:  {prefix:string,value:string}) => {
     const {prefix,value} = replaceData;
@@ -102,6 +107,11 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
   const replaceAttribsVal = (attribs: any, key: string) => {
     let code = attribs[key];
     if (!code) return
+    if(code.indexOf('$slots')>-1){
+      importRender.addVueApi('useSlots');
+      importRender.addHookMap('slots','useSlots')
+      code = code.replace('$slots','slots')
+    }
     let ast = null;
     if (code.charAt(0) === '{' && code.charAt(code.length - 1) === '}') {
       code = `${adapterVariable}${code}`
@@ -176,12 +186,18 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
 
   const updateSlot =(elem:any) =>{
     const attribs = elem.attribs;
-    if(attribs && (attribs['slot'] || attribs['v-slot'])){
-      elem.name = 'template';
+    if(attribs && (attribs['slot'] || attribs['v-slot']) && elem.name!='template'){
+
+      // elem.name = 'template';
       let slotName =  attribs['slot'] || attribs['v-slot']
-      attribs[`#${slotName}`] = ''
-      attribs['slot'] && delete attribs['slot'];
-      attribs['v-slot'] && delete attribs['v-slot'];
+      delete attribs['slot']
+      delete attribs['v-slot']
+      delete attribs['v-else']
+      let code =  render(elem, {
+        encodeEntities:'utf8',
+      })
+      let newElement= parseDocument(`<template #${slotName}>${code}</template>`);
+      DomUtils.replaceElement(elem,newElement)
     }
   }
 
@@ -192,7 +208,21 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       if (key.indexOf('v-')>-1 || firstChar === ':' || firstChar==='@') replaceAttribsVal(attribs, key);
     })
   }
+
+  const setRootEl = (dom) =>{
+    const elName = getCompoentEl();
+    if(importRender.hookMap.has(elName)){
+      dom.children.forEach(item => {
+        if(item.type!='text'){
+          console.log(elName)
+          item.attribs['ref'] = elName;
+        }
+      });
+    }
+  }
+
   if (scriptData && dom) {
+    setRootEl(dom)
     DomUtils.filter((elem: any) => {
       updateKey(elem)
       addForKey(elem)

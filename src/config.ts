@@ -1,7 +1,7 @@
 import path from 'path'
 
 export const options = {
-  dataName: 'state',
+  dataName: 'stateData',
   alias: {
     "~": "D:\/gitroot\/8591\/touch\/",
     "@": "D:\/gitroot\/8591\/touch\/",

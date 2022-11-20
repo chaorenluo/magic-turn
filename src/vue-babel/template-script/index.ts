@@ -14,7 +14,7 @@ import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
 import VuexRender from './VuexRender'
 import NuxtRender from "../template-nuxt";
-import { OptionsApi } from './utils'
+import { OptionsApi,getCompoentEl } from './utils'
 const { parse } = parser;
 
 
@@ -35,6 +35,7 @@ const scriptRender = async (code: string, options,html) => {
   let vuexRender: VuexRender;
   let nuxtRender:NuxtRender
   let importRender = ImportRender(newAst);
+  let ruleGlobal = ['$route','$router','$axios','$el']
   const loopProperty = (path) => {
     if (!path.node.property) {
       return path.node.type
@@ -50,7 +51,7 @@ const scriptRender = async (code: string, options,html) => {
 
   const replaceNodeName = (property, name, newNode, path) => {
     // 提取页面中使用了mixin的变量
-    mixinRender &&mixinRender.mixinAdvance(name)
+    mixinRender && mixinRender.mixinAdvance(name)
     const computedReplace = () => {
       newNode.object = newNode.property;
       newNode.property = t.identifier('value')
@@ -203,10 +204,31 @@ const scriptRender = async (code: string, options,html) => {
             newNode.name = name.replace('$', '')
             importRender.addRouter(newNode.name)
           }
+          if(name === '$slots'){
+            let name = 'slots';
+            let value = 'useSlots';
+            newNode.name = name.replace('$', '')
+            importRender.addVueApi(value);
+            importRender.addHookMap(name,value)
+            if(t.isMemberExpression(path.parent) &&  path.parent.property.name === 'default'){
+              path.parentPath.replaceWith(newNode)
+            }
+            return
+          }
+          if(name === '$el'){
+            importRender.addVueApi('ref');
+            let el = t.memberExpression(t.identifier('el_ref'),t.identifier('value'))
+            importRender.addHookMap(getCompoentEl(),'ref')
+            path.replaceWith(el);
+            return
+          }
+          if(name === '$axios'){
+            newNode.name = '$fetch'
+          }
           if (importRender.isVueApi(name)) {
             newNode.name = importRender.conversionApi(name);
             importRender.addApiKey(newNode.name, path)
-          } else {
+          } else if(!ruleGlobal.includes(name)) {
             importRender.addGlobal(name)
           }
         }

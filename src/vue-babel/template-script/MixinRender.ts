@@ -151,25 +151,43 @@ export default class MixinRender{
     }
   }
 
-  updateImportName(importName: string) {
+  updateImportName(importName: string,type=1) {
     let body = this.newAst.program.body;
     for (let index = 0; index < body.length; index++) {
       const item = body[index];
       if (t.isImportDeclaration(item) && item.specifiers.length === 1) {
-        let importNode = item.specifiers[0]
-        let local = importNode.local
-        if (local.name === importName) {
-          local.name = modifyCycleName(importName, 'use')
-          break;
-        }
+          let importNode = item.specifiers[0]
+          let local = importNode.local
+          if (local.name === importName) {
+            if(type === 1){
+              local.name = modifyCycleName(importName, 'use')
+            }else if(type === 2){
+              delete body[index];
+            }
+            break;
+          }
       }
     }
   }
 
+  getDeleteMixin = () =>{
+    let setArr = new Set<string>();
+    this.filesList.forEach(res=>{
+      setArr.add(res.name)
+    })
+    return setArr;
+  }
+
   render() {
+   let delMixinSet = this.getDeleteMixin();
     this.useAttribute.forEach((item, key) => {
-      this.updateImportName(key)
+      delMixinSet.delete(key)
+      this.updateImportName(key,1)
       this.importMixin.add(createFnVariable(Array.from(item),modifyCycleName(key, 'use')));
+    })
+    // 删除没有使用的mixin
+    delMixinSet.forEach(item=>{
+      this.updateImportName(item,2)
     })
     this.importMixin.forEach(item=>{
       this.newAst.program.body.push(item)

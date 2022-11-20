@@ -74,9 +74,7 @@ const createFile = () => {
 }
 
 const init = async (path: string) => {
-
   let fileArr = getAllDirByFilename(path,options.compileDir).filter(item=>isVue(item))
-
   let callback = async (filePath: string) => {
     const code = await readFile(filePath, { encoding: 'utf-8' });
     const fileData = await vueRender(code, options,filePath)
@@ -84,6 +82,7 @@ const init = async (path: string) => {
     collectPinia(fileData?.scriptData?.vuexRender?.piniaRender)
     collectMixins(fileData?.scriptData?.mixinRender)
   }
+  
   Promise.all(fileArr.map(callback)).then(res => {
     createFile()
     createPinia()
