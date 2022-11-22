@@ -43,9 +43,7 @@ const scriptRender = async (code: string, options,html) => {
   }
   // 创建全局对象获取值
   const createSetupState = () => {
-    importRender.addVueApi('getCurrentInstance')
-    let node = t.memberExpression(t.callExpression(t.identifier('getCurrentInstance'), []), t.identifier('setupState'));
-    return node
+    return t.identifier(options.dataName);
   }
 
   const replaceNodeName = (property, name, newNode, path) => {
@@ -57,9 +55,10 @@ const scriptRender = async (code: string, options,html) => {
       return true;
     }
     const templateLiteral = () => {
+
       if (property.type === 'TemplateLiteral') {
         let type = loopProperty(path)
-        newNode.object = type === 'CallExpression' ? createSetupState() : t.identifier(options.dataName)
+        newNode.object = t.identifier(options.dataName);
         return true;
       }
     }

@@ -91,6 +91,8 @@ const init = async (path: string) => {
   })
   // const code = await readFile(path, { encoding: 'utf-8' });
   // const fileData = await vueRender(code, options)
+  // // console.log(fileData.contentHtml)
+  // fse.outputFileSync('./ljm.vue',fileData.contentHtml)
 }
 
 

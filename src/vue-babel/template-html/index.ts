@@ -37,6 +37,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
 
 
   const removeAdapterVal = (code) => {
+    // 需要处理
     let newCode = code.replaceAll(adapterVariable,'')
     newCode = newCode.replaceAll(';','')
     return newCode;
@@ -45,15 +46,18 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
   const loopInterpolation = (elem: any) => {
     let str = elem.data;
     let interpolationList: Array<any> = [];
-    let pattern = /\{{(.+?)\}}/g;
+    let pattern = /\{\{([\s\S]+?)\}\}/g;
     let strItem;
     while (strItem = pattern.exec(str)) {
+      // console.log(strItem)
       let ast = parse(strItem[1])
       let data = {
         oldValue: strItem[1],
       }
       traverse.default(ast, {
         Identifier(path: any) {
+          console.log(path.node.name)
+          // 需要处理【xxx】的前缀
           if (!path.parent.property || path.key === 'object') {
             let name = path.node.name;
             mixinRender && mixinRender.mixinAdvance(name)

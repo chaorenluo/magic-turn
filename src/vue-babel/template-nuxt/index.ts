@@ -11,7 +11,7 @@ export default class NuxtRender{
     nuxtHookNode = new Set();
     nuxtContext = new Set(['req','env','params','query','error','redirect','res']);
 
-    constructor(_ast:t.File,_options:any,_importRender:importRender){
+    constructor(_ast:t.File,_options:any,_importRender:any){
         this.astNode = _ast;
         this.options = _options;
         this.importRender = _importRender;
