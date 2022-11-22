@@ -16,6 +16,8 @@ const ImportRender = (newAst:t.File) => {
     importGlobal: [],
     
     vueApiImports: new Set<string>(defaultVueApi),
+
+    hookMap:new Map(),
   
     globalApi: new Set<string>(),
 
@@ -73,10 +75,32 @@ const ImportRender = (newAst:t.File) => {
       this.vueApiImports.add(value)
   
     },
+
+    addHookMap(name:string,value:string){
+      if(!this.hookMap.has(name)){
+        this.hookMap.set(name,{
+          name,
+          value
+        })
+      }
+    },
+
+    renderHookMap(){
+      if (this.hookMap.size > 0) {
+        this.hookMap.forEach(item => {
+         let hookNode = createFnVariable(item.name,item.value)
+         newAst.program.body.push(hookNode)
+        })
+      }
+    },
   
     renderGlobal() {
       // 判断是nuxt还是vue3 全局变量导入的方式不一样
-      return '';
+      // addGlobal
+      if(this.globalApi.size>0){
+        let globalNode = createFnVariable(Array.from(this.globalApi),'useNuxtApp')
+        newAst.program.body.push(globalNode)
+      }
     },
   
     renderRouter() {
@@ -87,6 +111,7 @@ const ImportRender = (newAst:t.File) => {
         })
       }
     },
+
 
      renderGlobalVariable(){
       if(this.globalVariable.length>0){
@@ -133,7 +158,9 @@ const ImportRender = (newAst:t.File) => {
   
     render() {
       this.renderImports();
-      this.renderImportGlobal()
+      this.renderImportGlobal();
+      this.renderGlobal()
+      this.renderHookMap();
       this.renderRouter()
       this.renderGlobalVariable()
       this.renderEmit()

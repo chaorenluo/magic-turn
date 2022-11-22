@@ -31,6 +31,7 @@ export const getPiniaName = (name:string) =>{
 }
 
 export const getPiniaVariable = (name:string) =>{
+  if(name.indexOf('Store')>-1) return name
   return name +'Store'
 }
 
@@ -46,7 +47,7 @@ export const createImport = (specifiers:Array<string>,source:string) =>{
   return importDeclaration
 }
 
-export const createFnVariable = (variable:Array<string> | string,fnName:string,params:any=[]) =>{
+export const createFnVariable = (variable:Array<string> | string,fnName:string,params:any=[],isAwait = false) =>{
   let callExpression = t.callExpression(t.identifier(fnName),params);
   let id:t.ObjectPattern | t.Identifier
   if(Array.isArray(variable)){
@@ -60,7 +61,12 @@ export const createFnVariable = (variable:Array<string> | string,fnName:string,p
   }else{
     id = t.identifier(variable)
   }
-  let declarations = t.variableDeclarator(id, callExpression);
+  let declarations;
+  if(isAwait){
+    declarations = t.variableDeclarator(id,t.awaitExpression(callExpression));
+  }else{
+    declarations = t.variableDeclarator(id,callExpression);
+  }
   let variableDeclaration = t.variableDeclaration('const', [declarations]);
   return variableDeclaration
 }
@@ -124,6 +130,7 @@ export const createCallExpression = (callee:t.MemberExpression | t.Identifier | 
 }
 
 export const getRefName= (name:string) =>{
+  if(name.indexOf('_ref')>-1) return name;
   return name+'_ref';
 }
 
@@ -138,6 +145,10 @@ export const filterImport = (name:string) =>{
     }
   }
   return status
+}
+
+export const getCompoentEl = () =>{
+  return  'el_ref'
 }
 
 export enum OptionsApi {

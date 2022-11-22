@@ -180,6 +180,9 @@ export default class PinnaNode {
         const propertyName = property.name;
         if (propertyName && propertyName.charAt(0) === "$") {
           _this.importGlobal.add(propertyName);
+          if(propertyName == '$axios'){
+            property.name = '$fetch'
+          }
           path.parentPath.replaceWith(property);
         }
       },

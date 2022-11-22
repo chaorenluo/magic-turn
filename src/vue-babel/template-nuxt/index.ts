@@ -91,7 +91,7 @@ export default class NuxtRender{
     renderAsyncData(objectMethod:t.ObjectMethod){
         const key = t.stringLiteral('ljm');
         const functionExpression = arrowFunctionExpression(objectMethod.params,objectMethod.body,objectMethod.async);
-        const statement = createFnVariable('asyncData','useAsyncData',[key,functionExpression])
+        const statement = createFnVariable('asyncData','useAsyncData',[key,functionExpression],true)
         this.addProgramBody(statement)
     }
 

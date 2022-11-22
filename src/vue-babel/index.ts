@@ -1,36 +1,59 @@
 import  { scriptRender } from './template-script'
 import {templateRender} from './template-html'
-import { Parser, DomHandler, DomUtils } from "htmlparser2";
+import { Parser,DomHandler, DomUtils, } from "htmlparser2";
+
+
+
 import {render} from 'dom-serializer';
+import { connected } from 'process';
 
 
 const decomposeTemp = (html:string) =>{
     let script = html.indexOf('<script>')>-1 ? html.substring(html.indexOf('<script>')+8,html.indexOf('</script>') ) :''
     return {
-      script,
+      script:setImportEnd(script),
       newHtml:html.replace(script,'LJM')
+    }
+  }
+
+  const updateAlias = (str:string) =>{
+    // console.log(str.indexOf("@import"))
+    console.log("*******************d***")
+    if(str.indexOf("@import") == -1) return str;
+    let startIndex = 0;
+    let endIndex = 0;
+    console.log("**********************")
+    for(let i = str.indexOf("@import");i<str.length;i++){
+        if(str[i] == `'` || str[i] == `"`){
+          if(!startIndex) {
+            startIndex =i;
+            continue;
+          }
+          if(!endIndex) {
+            endIndex =i+1; 
+            continue;
+          }
+          if(startIndex && endIndex){
+            break;
+          }
+        }
+    }
+
+    if(startIndex && endIndex){
+      let importCssUrl = str.substring(startIndex,endIndex);
+      let newImportCssUrl =  importCssUrl.replaceAll('../','');
+      let firstChar = newImportCssUrl.charAt(0);
+      let url = `${firstChar}~/`+newImportCssUrl.substring(1,newImportCssUrl.length)+';'
+      str = str.replace(importCssUrl,url);
+      return str
     }
   }
  
   const setImportEnd = (str:string) =>{
-    let arr = str.split('\r\n');
-    for (let index = 0; index < arr.length; index++) {
-      let element = arr[index];
-      if(element.indexOf('@import')>-1){
-        if(element.indexOf('.stylus')>-1){
-          element = element.replace('.stylus','')
-        }else if(element.indexOf('.styl')>-1){
-          element = element.replace('.stylus','')
-        }
-        // element = element.replace('.styl','').replace('.stylus','')
-        // element = element
-        if(!element.endsWith(';')){
-          element =  element +';'
-        }
-        arr[index] = element
-      }
-    }
-    return arr.join('\r\n')
+    str = updateAlias(str)
+    str = str.replaceAll('stylus','scss'); 
+    str = str.replaceAll('styl','scss'); 
+     return str
   }
 
 const vueRender = async (html: any,options:any,filePath) => {
