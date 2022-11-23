@@ -89,22 +89,23 @@ export default class NuxtRender{
     }
 
     renderAsyncData(objectMethod:t.ObjectMethod){
-        const key = t.stringLiteral('ljm');
         const functionExpression = arrowFunctionExpression(objectMethod.params,objectMethod.body,objectMethod.async);
-        const statement = createFnVariable('asyncData','useAsyncData',[key,functionExpression],true)
+        const statement = createFnVariable('asyncData','useAsyncData',[functionExpression],true)
         this.addProgramBody(statement)
     }
 
     renderPageMeta(){
-        let objectExpression:Array<any> = [];
-        this.pageMetaMap.forEach((value,key)=>{
-            objectExpression.push({
-                name:key,
-                node:value
+        let objectExpression: Array<any> = [];
+        if (this.pageMetaMap.size > 0) {
+            this.pageMetaMap.forEach((value,key)=>{
+                objectExpression.push({
+                    name:key,
+                    node:value
+                })
             })
-        })
-        const statement =  createRunFunction('definePageMeta',[createObjectExpression(objectExpression)])
-        this.addProgramBody(statement)
+            const statement =  createRunFunction('definePageMeta',[createObjectExpression(objectExpression)])
+            this.addProgramBody(statement)   
+        }
     }
 
     renderHead(body:t.BlockStatement){

@@ -34,7 +34,8 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       } catch (error) {
        throw new Error(error);
      }
-    }else{
+    } else {
+    
       let node = t.identifier(value)
       path.replaceWith(node) 
     }
@@ -42,9 +43,10 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
 
 
   const removeAdapterVal = (code) => {
-    // 需要处理
-    let newCode = code.replaceAll(adapterVariable,'')
-    newCode = newCode.replaceAll(';','')
+    let newCode = code.replaceAll(adapterVariable, '')
+    if (newCode.charAt(newCode.length - 1) == ';') {
+      newCode = newCode.substring(0, newCode.length - 1);
+    }
     return newCode;
   }
 
@@ -54,14 +56,12 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     let pattern = /\{\{([\s\S]+?)\}\}/g;
     let strItem;
     while (strItem = pattern.exec(str)) {
-      // console.log(strItem)
       let ast = parse(strItem[1])
       let data = {
         oldValue: strItem[1],
       }
       traverse.default(ast, {
         Identifier(path: any) {
-          console.log(path.node.name)
           // 需要处理【xxx】的前缀
           if (!path.parent.property || path.key === 'object') {
             let name = path.node.name;
@@ -99,7 +99,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       addPrefixIdentifier(value.path, value.replaceData)
     })
     RenderCallbacks.push(async () => {
-      const callback = async(item:any) => {
+      const callback = async (item: any) => {
         let value = await generate.default(item.ast);
         let code = removeAdapterVal(value.code)
         elem.data =elem.data.replaceAll(item.oldValue,code);
@@ -120,7 +120,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     if (code.charAt(0) === '{' && code.charAt(code.length - 1) === '}') {
       code = `${adapterVariable}${code}`
     }
-    ast = parse(code,)
+    ast = parse(code)
     const nodeIdentifier: Array<any> = [];
     traverse.default(ast, {
       Identifier(path: any) {
@@ -153,7 +153,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     })
     RenderCallbacks.push(async () => {
       let attribsCode = await generate.default(ast);
-
+ 
       attribs[key] = removeAdapterVal(attribsCode.code);
     })
   }
@@ -218,7 +218,6 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     if(importRender.hookMap.has(elName)){
       dom.children.forEach(item => {
         if(item.type!='text'){
-          console.log(elName)
           item.attribs['ref'] = elName;
         }
       });
@@ -230,11 +229,15 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
     DomUtils.filter((elem: any) => {
       updateKey(elem)
       addForKey(elem)
-      updateSlot(elem)
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs)
       replaceInterpolation(elem) 
     }, dom, true)
+    
     await Promise.all(RenderCallbacks.map(callback => callback()))
+    // 扫描Slot
+    DomUtils.filter((elem: any) => {
+      updateSlot(elem)
+    }, dom, true);
   }
 }

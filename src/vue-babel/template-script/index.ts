@@ -175,7 +175,7 @@ const scriptRender = async (code: string, options,html) => {
           propsRender = new PropsRender(path.node.value, options, newAst)
           break;
         case OptionsApi.Watch:
-          watchRender = new WatchRender(path.node.value, dataRender, vuexRender,computedRender,options, newAst)
+          watchRender = new WatchRender(path.node.value, {dataRender, vuexRender,computedRender,propsRender,mixinRender},options, newAst)
           break;
         default:
           break;

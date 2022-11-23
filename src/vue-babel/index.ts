@@ -18,11 +18,10 @@ const decomposeTemp = (html:string) =>{
 
   const updateAlias = (str:string) =>{
     // console.log(str.indexOf("@import"))
-    console.log("*******************d***")
+
     if(str.indexOf("@import") == -1) return str;
     let startIndex = 0;
     let endIndex = 0;
-    console.log("**********************")
     for(let i = str.indexOf("@import");i<str.length;i++){
         if(str[i] == `'` || str[i] == `"`){
           if(!startIndex) {

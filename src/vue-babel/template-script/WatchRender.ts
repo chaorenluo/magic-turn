@@ -4,9 +4,14 @@ import t from '@babel/types';
 import DataRender from './DataRender'
 import VuexRender from './VuexRender'
 import ComputedRender from './ComputedRender'
+import PropsRender from './PropsRender'
+import MixinRender from './MixinRender'
 
 const { parse } = parser;
 
+type DataContent = {
+  dataRender: DataRender, vuexRender:VuexRender,computedRender:ComputedRender, propsRender:PropsRender,mixinRender:MixinRender
+}
 export default class WatchRender {
   watchNode: any;
   objectWatch: Array<any> = [];
@@ -16,15 +21,20 @@ export default class WatchRender {
   options: any;
   newAst: t.File;
   vuexRender: VuexRender;
-  computedRender:ComputedRender
+  computedRender: ComputedRender;
+  propsRender: PropsRender;
+  mixinRender:MixinRender
 
-  constructor(watchNode: any, dataRender: DataRender, _vuexRender:VuexRender,_computedRender:ComputedRender, options: any, _newAst: t.File) {
+  constructor(watchNode: any, dataContent:DataContent, options: any, _newAst: t.File) {
+    const { dataRender, vuexRender,computedRender,propsRender,mixinRender} = dataContent;
     this.watchNode = watchNode;
     this.dataRender = dataRender;
     this.options = options;
     this.newAst = _newAst;
-    this.vuexRender = _vuexRender;
-    this.computedRender = _computedRender;
+    this.vuexRender = vuexRender;
+    this.computedRender = computedRender;
+    this.propsRender = propsRender;
+    this.mixinRender = mixinRender;
     this.init()
   }
 
@@ -45,10 +55,23 @@ export default class WatchRender {
 
   getPrefix(watchName: string) {
     let firstNode = watchName.split('.')[0];
+    if (firstNode.indexOf('$') > -1) {
+      return watchName.replace('$', '');
+    }
     if (this.dataRender && this.dataRender.hasReactiveKey(firstNode)) {
-      return `state.${watchName}`
+      return `${this.options.dataName}.${watchName}`
+    }
+    if (this.propsRender && this.propsRender.hasPropsKey(firstNode)) {
+      return `props.${watchName}`
     }
     if (this.computedRender && this.computedRender.hasComputedKey(firstNode)) {
+      return `${watchName}.value`
+    }
+    if (this.mixinRender && this.mixinRender.reactiveMap.has(firstNode)) {
+      const data = this.mixinRender.reactiveMap.get(firstNode)
+      return `${data.name}.${watchName}`
+    }
+    if (this.mixinRender && this.mixinRender.computeMap.has(firstNode)) {
       return `${watchName}.value`
     }
     if (this.vuexRender && this.vuexRender.stateHookMap.has(firstNode)) {
@@ -75,12 +98,15 @@ export default class WatchRender {
     }
   }
 
-  createWatchNode(watchItem: any, watchParams?: any) {
+  createWatchNode(watchItem: any, watchParams:Array<any>=[]) {
     let watchNameNode = this.addPrefix(watchItem.key);
+    if (['route'].includes(watchNameNode.name)) {
+      watchParams.push(t.objectProperty(t.identifier('deep'), t.booleanLiteral(true)))
+    }
     let watchAttribute = arrowFunctionExpression([], watchNameNode)
     let watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
     let params = [watchAttribute, watchFn];
-    if (watchParams) {
+    if (watchParams.length > 0) {
       params.push(t.objectExpression(watchParams) as any)
     }
     let fn = createRunFunction(OptionsApi.Watch, params as any)
