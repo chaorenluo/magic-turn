@@ -29,7 +29,7 @@ export const options = {
   },
   output:   path.join(__dirname, '../newVue/'),
   entranceDir:'/Users/ljm/gitroot/8591/touch/',
-  compileDir:['components','pages']
+  compileDir:['components','pages','layouts']
 }
 
 

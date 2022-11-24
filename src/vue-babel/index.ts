@@ -92,7 +92,7 @@ const vueRender = async (html: any,options:any,filePath:string) => {
     scriptData = await scriptRender(scriptNode, options,html);
     await templateRender(templateNode, scriptData,filePath)
     const { newCode } = await scriptData.render()
-    scriptMap.get('script').data = newCode;
+    scriptMap.get('script').data = '\n'+newCode+'\n';
   }
   const contentHtml = render(handler.dom, {
     encodeEntities:'utf8',

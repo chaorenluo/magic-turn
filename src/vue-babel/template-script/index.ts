@@ -113,11 +113,17 @@ const scriptRender = async (code: string, options,html) => {
         return true;
       }
     }
+    const virtualKey = () => {
+      if (newNode.computed) {
+        newNode.object = t.identifier(options.dataName)
+        return true 
+      }
+    }
     const end = () => {
       newNode = newNode.property;
       return true
     }
-    let callback = [templateLiteral,  mixinReactive, mixinCompute,mixinRef,dataReactive, dataCompute,vuexStore, dataProps, end]
+    let callback = [templateLiteral,  mixinReactive, mixinCompute,mixinRef,dataReactive, dataCompute,vuexStore, dataProps,virtualKey, end]
     for (let index = 0; index < callback.length; index++) {
       const element = callback[index];
       if (element()) {
