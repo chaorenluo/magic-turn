@@ -13,7 +13,7 @@ import {getRefName,getCompoentEl} from '../template-script/utils'
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
 
-export const templateRender = async (dom: any, scriptData: any,html) => {
+export const templateRender = async (dom: any, scriptData: any,filePath:string) => {
 
   const RenderCallbacks: Array<Function> = [];
  
@@ -32,7 +32,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
           path.replaceWith(node)    
         }
       } catch (error) {
-       throw new Error(error);
+        console.log(filePath,path.node.name)
      }
     } else {
     
@@ -63,7 +63,7 @@ export const templateRender = async (dom: any, scriptData: any,html) => {
       traverse.default(ast, {
         Identifier(path: any) {
           // 需要处理【xxx】的前缀
-          if (!path.parent.property || path.key === 'object') {
+          if (!path.parent.property || path.key === 'object' || (path.key === 'property' && path.parent.computed)) {
             let name = path.node.name;
             mixinRender && mixinRender.mixinAdvance(name)
             if (mixinRender && mixinRender.reactiveMap.has(name)) {

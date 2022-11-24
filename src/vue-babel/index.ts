@@ -55,7 +55,7 @@ const decomposeTemp = (html:string) =>{
      return str
   }
 
-const vueRender = async (html: any,options:any,filePath) => {
+const vueRender = async (html: any,options:any,filePath:string) => {
   let htmlData =  decomposeTemp(html)
   let templateMap = new Map();
   let scriptMap = new Map();
@@ -90,7 +90,7 @@ const vueRender = async (html: any,options:any,filePath) => {
  
   if (scriptNode) {
     scriptData = await scriptRender(scriptNode, options,html);
-    await templateRender(templateNode, scriptData, html)
+    await templateRender(templateNode, scriptData,filePath)
     const { newCode } = await scriptData.render()
     scriptMap.get('script').data = newCode;
   }
