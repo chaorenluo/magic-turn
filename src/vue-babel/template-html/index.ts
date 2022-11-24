@@ -124,7 +124,7 @@ export const templateRender = async (dom: any, scriptData: any,filePath:string) 
     const nodeIdentifier: Array<any> = [];
     traverse.default(ast, {
       Identifier(path: any) {
-        if (!path.parent.property || path.key === 'object') {
+        if (!path.parent.property || path.key === 'object' && (path.key === 'property' && path.parent.computed)) {
           let name = path.node.name;
           mixinRender && mixinRender.mixinAdvance(name)
           if (dataRender && dataRender.hasReactiveKey(name)) {
@@ -164,8 +164,11 @@ export const templateRender = async (dom: any, scriptData: any,filePath:string) 
     }
   }
 
-  const updateRefName =(attribs:any,key:string) =>{
-    if(key === 'ref') attribs[key] = getRefName(attribs[key])
+  const updateRefName =(attribs:any,key:string) =>{     
+    if (key === 'ref') {
+      attribs[key] = getRefName(attribs[key])
+      mixinRender && mixinRender.mixinAdvance(attribs[key])
+    }
   }
 
   const updateKey = (elem:any) =>{

@@ -129,8 +129,8 @@ export const createCallExpression = (callee:t.MemberExpression | t.Identifier | 
   return t.callExpression(callee,params);
 }
 
-export const getRefName= (name:string) =>{
-  if(name.indexOf('_ref')>-1) return name;
+export const getRefName = (name: string) => {
+  if(!name || name.indexOf('_ref')>-1) return name;
   return name+'_ref';
 }
 

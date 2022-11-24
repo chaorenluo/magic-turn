@@ -15,6 +15,7 @@ export default class MixinRender{
   reactiveMap:Map<string, any> = new Map();
   computeMap: Map<string, any> = new Map();
   methodsMap: Map<string, any> = new Map();
+  refMap:Map<string,any> = new Map();
   newAst:t.File;
   importMixin = new Set<t.VariableDeclaration>();
   useAttribute = new Map<string,any>();
@@ -56,14 +57,15 @@ export default class MixinRender{
    async addMixinCode (filesList: Array<any>, nodeList: Array<any>){
     const callback = async (item:any, key:any) => {
       const nodeItem = nodeList[key];
-      const { methodsRender, computedRender, dataRender, vuexRender,render } = nodeItem
+      const { methodsRender, computedRender, dataRender, vuexRender,render,importRender } = nodeItem
       let { newAst } = await render();
 
       const methodsKey = methodsRender ? Array.from(methodsRender.methodsKey) : [];
       const computedKey = computedRender ? Array.from(computedRender.computedKey) : [];
       const reactiveKey = dataRender ? [dataRender.options.dataName] : [];
+      const refKeys = importRender ?  Array.from(importRender.refKey) : [];
       const mutationsExportNode = vuexRender ? Array.from(Array.from(vuexRender.mutationsExportNode)) : [];
-      const hookValue = reactiveKey.concat(computedKey).concat(methodsKey).concat(mutationsExportNode);
+      const hookValue = reactiveKey.concat(computedKey).concat(refKeys).concat(methodsKey).concat(mutationsExportNode);
       const mixinName = item.name
       let mixinHookName = modifyCycleName(mixinName, 'use');
       // 存储mixin的data变量
@@ -77,6 +79,10 @@ export default class MixinRender{
       // 存储mixin的方法变量
       if (methodsKey && methodsKey.length > 0) {
         methodsKey.forEach(key =>this.methodsMap.set(key,{name:methodsRender.options.dataName,mixinName}))
+      }
+      //存储mixin中ref变量
+      if (refKeys && refKeys.length > 0) {
+        refKeys.forEach(key=>this.refMap.set(key,{name:key,mixinName}))
       }
       // vuex中的方法变量
       if (vuexRender && vuexRender.mutationsExportNode) {
@@ -102,7 +108,6 @@ export default class MixinRender{
       const file = t.file(program)
       nodeItem.newAst = file;
       nodeItem.newCode =  await generate.default(file).code
-
     }
     await Promise.all(filesList.map(callback))
 
@@ -146,6 +151,10 @@ export default class MixinRender{
       data = this.reactiveMap.get(name)
       name = data.name;
     }
+    if (this.refMap.has(name)) {
+      data = this.refMap.get(name)
+      name = data.name;
+    }
     if (data) {
       this.addUeAttribute({name,mixinName:data.mixinName})
     }
@@ -156,12 +165,14 @@ export default class MixinRender{
     for (let index = 0; index < body.length; index++) {
       const item = body[index];
       if (t.isImportDeclaration(item) && item.specifiers.length === 1) {
+ 
           let importNode = item.specifiers[0]
           let local = importNode.local
           if (local.name === importName) {
             if(type === 1){
               local.name = modifyCycleName(importName, 'use')
-            }else if(type === 2){
+            } else if (type === 2) {
+              
               delete body[index];
             }
             break;
@@ -172,7 +183,7 @@ export default class MixinRender{
 
   getDeleteMixin = () =>{
     let setArr = new Set<string>();
-    this.filesList.forEach(res=>{
+    this.filesList.forEach(res => {
       setArr.add(res.name)
     })
     return setArr;

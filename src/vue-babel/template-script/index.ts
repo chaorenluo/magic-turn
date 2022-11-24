@@ -14,7 +14,7 @@ import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
 import VuexRender from './VuexRender'
 import NuxtRender from "../template-nuxt";
-import { OptionsApi,getCompoentEl } from './utils'
+import { OptionsApi,getCompoentEl,getRefName} from './utils'
 const { parse } = parser;
 
 
@@ -58,7 +58,7 @@ const scriptRender = async (code: string, options,html) => {
     const templateLiteral = () => {
 
       if (property.type === 'TemplateLiteral') {
-        let type = loopProperty(path)
+        // let type = loopProperty(path)
         newNode.object = t.identifier(options.dataName);
         return true;
       }
@@ -72,6 +72,13 @@ const scriptRender = async (code: string, options,html) => {
     }
     const mixinCompute = () => {
       if (mixinRender && mixinRender.computeMap.has(name)) {
+        return computedReplace()
+      }
+    }
+    const mixinRef = () => {
+      const newName = getRefName(name);
+      if (mixinRender && mixinRender.refMap.has(newName)) {
+        newNode.property.name = newName;
         return computedReplace()
       }
     }
@@ -110,7 +117,7 @@ const scriptRender = async (code: string, options,html) => {
       newNode = newNode.property;
       return true
     }
-    let callback = [templateLiteral,  mixinReactive, mixinCompute,dataReactive, dataCompute,vuexStore, dataProps, end]
+    let callback = [templateLiteral,  mixinReactive, mixinCompute,mixinRef,dataReactive, dataCompute,vuexStore, dataProps, end]
     for (let index = 0; index < callback.length; index++) {
       const element = callback[index];
       if (element()) {
@@ -192,7 +199,7 @@ const scriptRender = async (code: string, options,html) => {
           // 处理refs语句
           if (name === '$refs') {
             path.parent.object = path.parent.property
-            path.parent.object.name = path.parent.object.name+'_ref'
+            path.parent.object.name = getRefName(path.parent.object.name);
             path.parent.property = t.identifier('value')
             importRender.addVueApi('ref');
             importRender.addRefKey(path.parent.object.name)
