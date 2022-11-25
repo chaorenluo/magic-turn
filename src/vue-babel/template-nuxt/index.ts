@@ -45,8 +45,8 @@ export default class NuxtRender{
         const file = t.file(t.program([t.exportDefaultDeclaration(t.objectExpression([objectMethod]))]))
         const _this = this;
         traverse.default(file,{
-            ObjectPattern(path){
-                if(path.parent.key.name === 'asyncData'){
+            ObjectPattern(path) {
+                if(path.parent.key && path.parent.key.name === 'asyncData'){
                     path.node.properties.forEach(element => {
                         if(!element.key){
                             return

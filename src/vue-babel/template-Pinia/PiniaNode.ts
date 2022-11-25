@@ -209,7 +209,13 @@ export default class PinnaNode {
           }
         } else {
           let fnName = path.node.callee.name;
-          if (fnName === "commit" || fnName === "dispatch") {
+          if (["commit", "dispatch"].includes(fnName)) {
+            let size = path.node.arguments[0].value.split('/').length;
+            // 大于1则表示是调用的其他store方法而不是本store的
+            if (size > 1) {
+              _this.analysisCallExpression(path);
+              return 
+            }
             let callExpression = _this.createCallExpression(
               path.node.arguments
             );

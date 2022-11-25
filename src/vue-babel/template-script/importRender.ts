@@ -69,7 +69,9 @@ const ImportRender = (newAst:t.File) => {
     addApiKey(value: string, path: any) {
       const argument = path.parent.arguments;
       if (value === vueApi.$emit && argument && argument.length > 0) {
-        this.emitKey.add(argument[0].value)
+        if (argument[0].value) {
+          this.emitKey.add(argument[0].value) 
+        }
         return
       }
       this.vueApiImports.add(value)
@@ -150,6 +152,7 @@ const ImportRender = (newAst:t.File) => {
     renderRef() {
       if (this.refKey.size > 0) {
         this.refKey.forEach(refName => {
+          // console.log(refName)
           let refNode = createFnVariable(refName,'ref',[t.nullLiteral()]);
           newAst.program.body.push(refNode)
         })

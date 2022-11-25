@@ -14,7 +14,7 @@ import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
 import VuexRender from './VuexRender'
 import NuxtRender from "../template-nuxt";
-import { OptionsApi,getCompoentEl,getRefName} from './utils'
+import { OptionsApi,getCompoentEl,getRefName,replaceCross} from './utils'
 const { parse } = parser;
 
 
@@ -185,7 +185,7 @@ const scriptRender = async (code: string, options,html) => {
           methodsRender = new MethodsRender(properties, options, newAst)
           break;
         case OptionsApi.Props:
-          propsRender = new PropsRender(path.node.value, options, newAst)
+          propsRender = new PropsRender(path.node.value, options, newAst,ast)
           break;
         case OptionsApi.Watch:
           watchRender = new WatchRender(path.node.value, {dataRender, vuexRender,computedRender,propsRender,mixinRender},options, newAst)
@@ -204,11 +204,18 @@ const scriptRender = async (code: string, options,html) => {
         if (name && name.indexOf('$') > -1) {
           // 处理refs语句
           if (name === '$refs') {
-            path.parent.object = path.parent.property
+            importRender.addVueApi('ref');
+            if(!t.isMemberExpression(path.parent)) return
+            if (t.isStringLiteral(path.parent.property)) {
+              path.parent.object = t.identifier(replaceCross(path.parent.property.value));
+            } else {
+              path.parent.object = path.parent.property
+            }
+  
             path.parent.object.name = getRefName(path.parent.object.name);
             path.parent.property = t.identifier('value')
-            importRender.addVueApi('ref');
-            importRender.addRefKey(path.parent.object.name)
+  
+            importRender.addRefKey(path.parent.object.name) 
             return
           }
           // 处理router

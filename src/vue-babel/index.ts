@@ -42,7 +42,10 @@ const decomposeTemp = (html:string) =>{
       let importCssUrl = str.substring(startIndex,endIndex);
       let newImportCssUrl =  importCssUrl.replaceAll('../','');
       let firstChar = newImportCssUrl.charAt(0);
-      let url = `${firstChar}~/`+newImportCssUrl.substring(1,newImportCssUrl.length)+';'
+      let url = `${firstChar}~/` + newImportCssUrl.substring(1, newImportCssUrl.length)
+      if (str.substring(endIndex, endIndex + 1) != ';') {
+        url = url + ';';
+      }
       str = str.replace(importCssUrl,url);
       return str
     }
@@ -55,7 +58,7 @@ const decomposeTemp = (html:string) =>{
      return str
   }
 
-const vueRender = async (html: any,options:any,filePath:string) => {
+const vueRender = async (html: any, options: any, filePath: string) => {
   let htmlData =  decomposeTemp(html)
   let templateMap = new Map();
   let scriptMap = new Map();
@@ -68,8 +71,10 @@ const vueRender = async (html: any,options:any,filePath:string) => {
   const dom = handler.dom;
   DomUtils.findOne(elem => {
     if (!scriptMap.has('script') && elem.name === 'script') {
-      elem.attribs = {setup:""}
-      scriptMap.set('script',elem.children[0])
+      if (!elem.attribs['type']) {
+        elem.attribs = {setup:""}
+        scriptMap.set('script',elem.children[0]) 
+      }
     }
     if (!templateMap.has('template') && elem.name === 'template') {
       templateMap.set('template',elem)
@@ -80,7 +85,6 @@ const vueRender = async (html: any,options:any,filePath:string) => {
       elem.attribs['lang'] = 'stylus';
       let content = elem.children[0].data;
       elem.children[0].data = setImportEnd(content);
-
      }
     }
   }, dom, true)
@@ -89,8 +93,9 @@ const vueRender = async (html: any,options:any,filePath:string) => {
   let scriptData;
  
   if (scriptNode) {
+    console.log(filePath)
     scriptData = await scriptRender(scriptNode, options,html);
-    await templateRender(templateNode, scriptData,filePath)
+    await templateRender(templateNode, scriptData,filePath,options)
     const { newCode } = await scriptData.render()
     scriptMap.get('script').data = '\n'+newCode+'\n';
   }

@@ -151,6 +151,10 @@ export const getCompoentEl = () =>{
   return  'el_ref'
 }
 
+export const replaceCross = (str:string) => {
+  return str.replaceAll('-', '_');
+}
+
 export enum OptionsApi {
   Data = 'data',
   Computed = 'computed',

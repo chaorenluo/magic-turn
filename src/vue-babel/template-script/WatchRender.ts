@@ -100,11 +100,17 @@ export default class WatchRender {
 
   createWatchNode(watchItem: any, watchParams:Array<any>=[]) {
     let watchNameNode = this.addPrefix(watchItem.key);
+    // console.log('watchNameNode---',watchNameNode,watchItem.key)
     if (['route'].includes(watchNameNode.name)) {
       watchParams.push(t.objectProperty(t.identifier('deep'), t.booleanLiteral(true)))
     }
     let watchAttribute = arrowFunctionExpression([], watchNameNode)
-    let watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
+    let watchFn;
+    if (watchItem.params && watchItem.body) {
+       watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
+    } else if(watchItem.value) {
+      watchFn = t.identifier(watchItem.value)
+    }
     let params = [watchAttribute, watchFn];
     if (watchParams.length > 0) {
       params.push(t.objectExpression(watchParams) as any)
@@ -124,10 +130,25 @@ export default class WatchRender {
       let watchParams: any = []
       value.properties.forEach((v: any) => {
         if (v.key.name == "handler") {
-          watchItem = {
-            params: v.params,
-            body: v.body,
-            key: node.key
+          if (v.body) {
+            watchItem = {
+              params: v.params,
+              body: v.body,
+              key: node.key
+            } 
+          } else if (v.value && t.isStringLiteral(v.value)) {
+            watchItem = {
+              params: v.params || null,
+              body: v.body || null,
+              key: node.key,
+              value:v.value.value
+            }
+          }else if (v.value && t.isFunctionExpression(v.value)) {
+            watchItem = {
+              params: v.value.params,
+              body: v.value.body,
+              key: node.key,
+            }
           }
         } else {
           watchParams.push(v)
@@ -140,6 +161,7 @@ export default class WatchRender {
         body: value.body,
         key: node.key
       }
+      console.log(node.key)
       this.createWatchNode(watchItem)
     }
 

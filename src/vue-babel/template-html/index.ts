@@ -5,7 +5,7 @@ import t from '@babel/types';
 import { render } from 'dom-serializer';
 import { DomUtils, parseDocument, ElementType } from "htmlparser2";
 
-import { getRefName, getCompoentEl } from '../template-script/utils'
+import { getRefName, getCompoentEl,replaceCross } from '../template-script/utils'
 
 
 
@@ -13,7 +13,7 @@ import { getRefName, getCompoentEl } from '../template-script/utils'
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
 
-export const templateRender = async (dom: any, scriptData: any, filePath: string) => {
+export const templateRender = async (dom: any, scriptData: any, filePath: string,options:any) => {
 
   const RenderCallbacks: Array<Function> = [];
 
@@ -176,7 +176,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
 
   const updateRefName = (attribs: any, key: string) => {
     if (key === 'ref') {
-      attribs[key] = getRefName(attribs[key])
+      attribs[key] = getRefName(replaceCross(attribs[key]))
       mixinRender && mixinRender.mixinAdvance(attribs[key])
     }
   }
@@ -313,6 +313,22 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     })
   }
 
+  const attribsUpdate = (elem:any) => {
+    if (!options.labelAttribs) return;
+    let labelData = options.labelAttribs[elem.name]
+    if (labelData) {
+      let attribs = elem.attribs;
+      Object.keys(attribs).map(key => { 
+        if (labelData[key]) {
+          let val = attribs[key]; 
+          let id = labelData[key]; 
+          attribs[id] = val;
+          delete attribs[key]
+        }
+      })
+    }
+  }
+
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
       updateRefName(attribs, key)
@@ -337,11 +353,11 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     DomUtils.filter((elem: any) => {
       updateKey(elem)
       addForKey(elem)
+      attribsUpdate(elem)
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs)
       replaceInterpolation(elem)
     }, dom, true)
-
     await Promise.all(RenderCallbacks.map(callback => callback()))
     // 扫描Slot
     let slotArr:Array<Set<any>> = [];
