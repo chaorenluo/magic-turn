@@ -163,5 +163,6 @@ export enum OptionsApi {
 export enum VuexFn {
   MapState = 'mapState',
   MapGetters = 'mapGetters',
-  mapMutations = 'mapMutations'
+  mapMutations = 'mapMutations',
+  mapActions = 'mapActions'
 }

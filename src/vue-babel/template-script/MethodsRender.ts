@@ -9,6 +9,7 @@ interface MethodsVariable {
 }
 
 
+
 export default class MethodsRender{
   methodsNode: Array<t.ObjectMethod | t.ObjectProperty | t.SpreadElement>;
   methodsKey: Set<string> = new Set();
@@ -25,7 +26,22 @@ export default class MethodsRender{
 
   init() { 
     this.methodsNode.forEach(node => {
-      if(node.type != 'ObjectProperty' && node.type != 'SpreadElement') {
+      if(t.isObjectProperty(node)){
+        const nodeName = node.key.name;
+        const val = node.value;
+        if(!val.callee) return;
+        if(val.callee.name === 'debounce'){
+          val.arguments[0].params = [];
+        }
+          this.methodsKey.add(nodeName);
+          const methodsItem = {
+            name: nodeName,
+            value:val
+          }
+          this.methodsBodyMap.set(nodeName,methodsItem)
+        return
+      }
+      if(!t.isObjectProperty(node) && !t.isSpreadElement(node)) {
         const nodeName = node.key.name;
         this.methodsKey.add(nodeName);
         const methodsItem = {
@@ -39,11 +55,17 @@ export default class MethodsRender{
     })
   }
 
+
   async render() {
     Array.from(this.methodsKey).forEach(item=>{
       const methodsItem = this.methodsBodyMap.get(item);
       if(!methodsItem)return;
-      let fn = arrowFunctionExpression(methodsItem.params,methodsItem.body,methodsItem.async);
+      let fn;
+      if(methodsItem.value){
+        fn = methodsItem.value
+      }else{
+        fn = arrowFunctionExpression(methodsItem.params,methodsItem.body,methodsItem.async);
+      }
       this.newAst.program.body.push(variableFunction(methodsItem.name,fn))
     })
   }

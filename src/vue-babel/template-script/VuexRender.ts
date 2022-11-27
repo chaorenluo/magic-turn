@@ -159,7 +159,7 @@ export default class VuexRender {
 
   analysisMethods(properties: Array<any>) {
     this.propertiesForEach(properties, (argument,calleeName) => {
-      if (calleeName === VuexFn.mapMutations) { 
+      if (calleeName === VuexFn.mapMutations || calleeName === VuexFn.mapActions) { 
         this.dealWithMutations(argument.arguments)
       }
     })
