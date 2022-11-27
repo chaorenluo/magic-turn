@@ -82,24 +82,25 @@ export default class VuexRender {
         let key = (item as t.StringLiteral).value;
         let status = this.isFile(key);
         let importName = status ? key : this.defaultStoreName
+        let storeName = getPiniaVariable(importName);
         this.piniaModules.set(importName,{
           importUrl:importName,
           importName
         });
         let data = {
           prefix:'',
-          value:getPiniaVariable(importName)
+          value:storeName
         }
         if (!status) {
           data = {
-            prefix:getPiniaVariable(importName),
+            prefix:storeName,
             value:''
           }
         }
         this.stateHookMap.set(key, data);
         this.mutationsExportNode.add({
           name: key,
-          node:createMemberExpression([importName,key])
+          node:createMemberExpression([key,storeName])
         }); 
       });
     }
@@ -129,7 +130,7 @@ export default class VuexRender {
           });
           this.mutationsExportNode.add({
             name: aliasVal,
-            node:createMemberExpression([storeName,aliasVal])
+            node:createMemberExpression([aliasVal,storeName])
           });  
         }else{
           type ===1 ?  this.createComputed(keyName, methBody) : this.createMutations(aliasKey, methBody);
@@ -152,10 +153,11 @@ export default class VuexRender {
       properties.forEach(item => {
         let keyName = item.key.name;
         let value = item.value;
+        let storeName = getPiniaVariable(importName);
         type ===1 ?  this.createComputed(keyName, value,importName) : this.createMutations(keyName, value);
         this.mutationsExportNode.add({
           name: keyName,
-          node:createMemberExpression([importName,keyName])
+          node:createMemberExpression([keyName,storeName])
         }); 
       }); 
     }
@@ -168,17 +170,18 @@ export default class VuexRender {
       val.forEach((item) => {
         let status = this.isFile(key);
         let importName = key.replaceAll('/','');
+        let storeName = getPiniaVariable(importName);
         this.piniaModules.set(key,{
           importUrl:key,
           importName
         });
         let data = {
-          prefix:getPiniaVariable(importName),
+          prefix:storeName,
           value:''
         }
         if (!status) {
           data = {
-            prefix:getPiniaVariable(importName),
+            prefix:storeName,
             value:''
           }
         }
@@ -186,7 +189,7 @@ export default class VuexRender {
         this.stateHookMap.set(item.value, data);
         this.mutationsExportNode.add({
           name: item.value,
-          node:createMemberExpression([importName,item.value])
+          node:createMemberExpression([item.value,storeName])
         }); 
       });
     }
