@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import t, { Identifier } from '@babel/types';
+import traverse from "@babel/traverse";
 export const modifyCycleName = (str: string, prefix = '',) => {
   return prefix+str.charAt(0).toUpperCase()+str.substring(1)
 }
@@ -70,6 +71,7 @@ export const createFnVariable = (variable:Array<string> | string,fnName:string,p
   let variableDeclaration = t.variableDeclaration('const', [declarations]);
   return variableDeclaration
 }
+
 
 export const arrowFunctionExpression = (params: (t.Identifier | t.RestElement | t.Pattern)[],body:t.BlockStatement | t.Expression,async=false) =>{
   let arrowFunctionExpression = t.arrowFunctionExpression(params,body,async)
@@ -151,8 +153,27 @@ export const getCompoentEl = () =>{
   return  'el_ref'
 }
 
-export const replaceCross = (str:string) => {
+export const replaceCross = (str: string) => {
   return str.replaceAll('-', '_');
+};
+export const getStoreUrl= (arr:Array<string>):string =>{
+  if(!Array.isArray(arr)) return '';
+  let endCount = arr.length === 1 ? 1 : arr.length-1;
+  return arr.slice(0, endCount).join('/')
+}
+
+export const replaceIdentifier = (ast,oldName,newName) =>{
+  let statement = t.expressionStatement(ast)
+  let program = t.program([statement])
+  const file = t.file(program)
+  traverse.default(file, {
+    Identifier(path){
+      let name = path.node.name;
+      if(name === oldName){
+        path.node.name = newName;
+      }
+    }
+  })
 }
 
 export enum OptionsApi {
@@ -164,8 +185,15 @@ export enum OptionsApi {
   Mixins = 'mixins'
 }
 
+export type piniaModuleItem = {
+  importUrl:string,
+  importName:string
+}
+
+
 export enum VuexFn {
   MapState = 'mapState',
   MapGetters = 'mapGetters',
-  mapMutations = 'mapMutations'
+  mapMutations = 'mapMutations',
+  mapActions = 'mapActions'
 }

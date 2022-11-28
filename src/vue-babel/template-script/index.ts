@@ -195,7 +195,7 @@ const scriptRender = async (code: string, options,html) => {
       }
     },
     MemberExpression(path) { 
-      if (path.node.object.type === 'ThisExpression') {
+      if (path.node.object.type === 'ThisExpression' || path.node.object.name === '_this') {
         const property = path.node.property;
         const name = property.name;
         let newNode = path.node;
@@ -259,6 +259,13 @@ const scriptRender = async (code: string, options,html) => {
       if(t.isThisExpression(node.init)){
         node.init = createSetupState();
       }
+    },
+    CallExpression(path){
+      path.node.arguments.forEach((arg,key)=>{
+        if(t.isThisExpression(arg)){
+          delete path.node.arguments[0]
+        }
+      })
     }
 
   });
