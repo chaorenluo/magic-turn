@@ -9,7 +9,7 @@ import { connected } from 'process';
 
 
 const decomposeTemp = (html:string) =>{
-    let script = html.indexOf('<script>')>-1 ? html.substring(html.indexOf('<script>')+8,html.indexOf('</script>') ) :''
+    let script = html.lastIndexOf('<script>')>-1 ? html.substring(html.indexOf('<script>')+8,html.lastIndexOf('</script>') ) :''
     return {
       script:setImportEnd(script),
       newHtml:html.replace(script,'LJM')
@@ -70,11 +70,9 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   parser.done();
   const dom = handler.dom;
   DomUtils.findOne(elem => {
-    if (!scriptMap.has('script') && elem.name === 'script') {
-      if (!elem.attribs['type']) {
-        elem.attribs = {setup:""}
-        scriptMap.set('script',elem.children[0]) 
-      }
+    if (!scriptMap.has('script') && elem.name === 'script' && !elem.attribs['type']) {
+      elem.attribs = {setup:""}
+      scriptMap.set('script',elem.children[0]) 
     }
     if (!templateMap.has('template') && elem.name === 'template') {
       templateMap.set('template',elem)
@@ -91,7 +89,6 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   let scriptNode = htmlData.script;
   let templateNode = templateMap.get("template");
   let scriptData;
- 
   if (scriptNode) {
     console.log(filePath)
     scriptData = await scriptRender(scriptNode, options,html);

@@ -1,6 +1,6 @@
 import traverse from "@babel/traverse";
 import parser from "@babel/parser";
-import { OptionsApi,getStoreUrl,piniaModuleItem,replaceIdentifier, modifyCycleName,VuexFn,getPiniaName,getPiniaVariable,createMemberExpression,createCallExpression } from "./utils";
+import { OptionsApi,getStoreUrl,piniaModuleItem,replaceIdentifier,replaceCross, modifyCycleName,VuexFn,getPiniaName,getPiniaVariable,createMemberExpression,createCallExpression } from "./utils";
 import t from "@babel/types";
 import fs from "fs";
 import { piniaStart } from "../template-Pinia/index";
@@ -154,7 +154,13 @@ export default class VuexRender {
         let keyName = item.key.name;
         let value = item.value;
         let storeName = getPiniaVariable(importName);
-        type ===1 ?  this.createComputed(keyName, value,importName) : this.createMutations(keyName, value);
+        if(type ===1){
+          this.createComputed(keyName, value,importName) 
+        }else{
+          let methBody = [importName,value.value].join('/');
+          this.createMutations(keyName, methBody);
+        }
+ 
         this.mutationsExportNode.add({
           name: keyName,
           node:createMemberExpression([keyName,storeName])
@@ -240,7 +246,7 @@ export default class VuexRender {
     let fnArr = [];
     if(!val) return;
     let piniaPath = val.split('/');
-    let key = piniaPath.length>1 ? this.matchingName(piniaPath) : this.defaultStoreName;
+    let key = replaceCross(piniaPath.length>1 ? this.matchingName(piniaPath) : this.defaultStoreName);
     this.piniaModules.set(key,{
       importUrl:piniaPath.length > 1 ? getStoreUrl(piniaPath) : this.defaultStoreName,
       importName:key

@@ -20,7 +20,6 @@ export default class PiniaRender {
     let fileCallback = async (key: string) => {
       let piniaModuleItem =  this.fileNameList.get(key) as piniaModuleItem;
       if (!PiniaNode.cacheNode.has(piniaModuleItem?.importName)) {
-        console.log(piniaModuleItem?.importUrl)
           const filePath = path.join(this.options.piniaStore.pathVal, piniaModuleItem?.importUrl) + '.js' as string;
           let status = fse.existsSync(filePath);
           if (status) {
