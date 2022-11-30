@@ -133,11 +133,54 @@ const scriptRender = async (code: string, options,html) => {
     return newNode;
   }
 
-  const ast = parse(code, {
+  let ast = parse(code, {
     sourceType: 'module'
   })
 
-
+  const isExportIdentifier =  () =>{
+    let body = ast.program.body;
+    let keyName = '';
+    let exportObj;
+    for (let index = 0; index < body.length; index++) {
+      const item = body[index];
+      if(t.isExportDefaultDeclaration(item)){
+        if(t.isIdentifier(item.declaration)){
+          keyName = item.declaration.name
+          break;
+        }
+      }
+    }
+    traverse.default(ast,{
+      Identifier(path){
+        if(path.node.name === keyName && t.isObjectExpression(path.parent.init)){
+          exportObj  = path.parent.init
+        
+        }
+      }
+    })
+    if(exportObj){
+      let astArr = []
+      body.forEach(item=>{
+        if(t.isVariableDeclaration(item) && !t.isExportDefaultDeclaration(item)){
+          let status = true;
+          item.declarations.forEach(item=>{
+              if(item.id.name == keyName){
+                status=false;
+              }
+          })
+          if(status){
+            astArr.push(item)
+          }
+        }
+      })
+      astArr.push(t.exportDefaultDeclaration(exportObj))
+      let file = t.file(t.program(astArr))
+      ast = file;
+    }
+  }
+  // 检测是否export default 的变量
+ isExportIdentifier()
+  
   // 转义vuex
   vuexRender = new VuexRender(ast, options,html);
   await vuexRender.analysisAst()

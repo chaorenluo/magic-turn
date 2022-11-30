@@ -65,6 +65,7 @@ export default class NuxtRender{
         let exportDefaultDeclaration =  this.astNode.program.body.filter(item=>t.isExportDefaultDeclaration(item))
         if(exportDefaultDeclaration.length === 0) return;
         const properties = exportDefaultDeclaration[0].declaration.properties;
+        if(!properties) return;
         for (let index = 0; index < properties.length; index++) {
             const element = properties[index];
             const name = element.key.name;

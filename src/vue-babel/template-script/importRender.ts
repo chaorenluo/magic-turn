@@ -151,7 +151,6 @@ const ImportRender = (newAst:t.File) => {
   
     renderRef() {
       if (this.refKey.size > 0) {
-        console.log(this.refKey)
         this.refKey.forEach(refName => {
           if(!refName) return
           let refNode = createFnVariable(refName,'ref',[t.nullLiteral()]);
