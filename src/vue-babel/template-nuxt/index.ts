@@ -31,7 +31,6 @@ export default class NuxtRender{
     }
 
     createContextNode(element:t.ObjectProperty,contextName:string){
-        console.log(contextName)
         if(contextName === 'req'){
             if(!this.nuxtHookNode.has(contextName) ){
                 element.value = this.createDefaultValue('useRequestHeaders','headers','req') 

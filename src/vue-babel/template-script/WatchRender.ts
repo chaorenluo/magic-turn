@@ -161,7 +161,6 @@ export default class WatchRender {
         body: value.body,
         key: node.key
       }
-      console.log(node.key)
       this.createWatchNode(watchItem)
     }
 

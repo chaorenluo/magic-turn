@@ -38,7 +38,6 @@ export default class VuexRender {
   createComputed(methName: string, methBody: string | t.ArrowFunctionExpression,storeName?:string) {
     let fnBody;
     if(typeof methBody === 'string'){
-      console.log('methBody---',methBody)
       let methBodyArr = methBody.split('/');
       methBodyArr[0] =  getPiniaVariable(methBodyArr[0])
       let memberExpression = createMemberExpression(methBodyArr.reverse())
@@ -146,7 +145,7 @@ export default class VuexRender {
       let status = this.isFile(key);
       let name = status ? key : this.defaultStoreName;
       let importName = name.replaceAll('/','');
-      this.piniaModules.set(name,{
+      this.piniaModules.set(importName,{
         importUrl:name,
         importName
       });
@@ -177,7 +176,7 @@ export default class VuexRender {
         let status = this.isFile(key);
         let importName = key.replaceAll('/','');
         let storeName = getPiniaVariable(importName);
-        this.piniaModules.set(key,{
+        this.piniaModules.set(importName,{
           importUrl:key,
           importName
         });
@@ -314,6 +313,48 @@ export default class VuexRender {
     }
   }
 
+  loopJoiningPath(path,filePath:Array<string>){
+    let parentPath = path.parentPath;
+    if(!t.isMemberExpression(parentPath.node)){
+      return
+    }
+    if(parentPath.node && parentPath.node.property){
+      filePath.push(parentPath.node.property.name)
+      this.loopJoiningPath(parentPath,filePath)
+    }
+    return filePath;
+
+  }
+
+  checkPath(pathArr:Array<string>){
+    let filePath = '';
+    if(pathArr.length===0) return filePath;
+    for (let index = 0; index < pathArr.length; index++) {
+        let path = pathArr.slice(0,pathArr.length-index)
+        let url = path.join('/');
+        let status = this.isFile(url);
+        if(status){
+          filePath = url;
+          break;
+        }
+    }
+    return filePath
+  }
+
+
+  queryTailNode(path:any,name:string){
+    let parentPath = path.parentPath;
+    if(!t.isMemberExpression(parentPath.node)){
+      return
+    }
+    if(parentPath.node.property && parentPath.node.property.name === name){
+      return parentPath
+    }
+    let node:any =  this.queryTailNode(path.parentPath,name)
+    return node
+  }
+
+
   async analysisAst() {
     const _this = this;
     let methodsNode;
@@ -342,7 +383,29 @@ export default class VuexRender {
             _this.analysisCallExpression(path)
           }
         }
+      },
+      Identifier(path){
+        let property = path.parent.property ;
+        let parentPath = path.parentPath;
+        if(path.node.name === '$store'){
+          property = path.parentPath.parentPath.node.property;
+          parentPath = path.parentPath.parentPath
+        }
+        if( ['store','$store'].includes(path.node.name) && property && property.name === 'state'){
+          let filePath = [];
+          _this.loopJoiningPath(parentPath,filePath)
+          let fileUrl = _this.checkPath(filePath)
+          let importName = fileUrl.replaceAll('/','');
+          _this.piniaModules.set(importName,{
+            importUrl:fileUrl,
+            importName
+          });
+          let urlArr = fileUrl.split('/')
+          let node = _this.queryTailNode(parentPath,urlArr[urlArr.length-1])
+          node && node.replaceWith(t.identifier(getPiniaVariable(importName)))
+        }
       }
+
     });
     this.addComputedStore(gettersNode);
     this.addMethodStore(methodsNode)
