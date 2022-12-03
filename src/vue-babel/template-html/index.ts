@@ -135,7 +135,6 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
         if (!path.parent.property || path.key === 'object' || (path.key === 'property' && path.parent.computed)) {
           dealWithRoute(path);
           let name = path.node.name;
-          // console.log(name)
           mixinRender && mixinRender.mixinAdvance(name)
           if (dataRender && dataRender.hasReactiveKey(name)) {
             nodeIdentifier.push({
@@ -304,7 +303,6 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
         })
       })
       let slotCOde = `<template #${slotName}>${code}</template>`
-      console.log(slotName,filePath)
       if (lastSlot.parent.name === 'template') {
         DomUtils.append(lastSlot.parent,parseDocument(slotCOde))
       } else {

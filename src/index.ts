@@ -5,6 +5,8 @@ import fs from 'fs'
 import fse from 'fs-extra'
 import babelRender from './vue-babel'
 import { options } from './config';
+import ProgressBar from '@jyeontu/progress-bar'
+
 
 const { scriptRender, vueRender } = babelRender;
 
@@ -73,23 +75,45 @@ const createFile = () => {
   })
 }
 
+const getProgressBar = (duration) =>{
+    const config = {
+      duration:duration,
+      current: 0,
+      showNumber:true,
+      tip:{
+          0: '开始转换',
+          50:'转换一半啦，不要着急……',
+          75:'马上就转换完了……',
+          100:'转换完成，文件已生成'
+      },
+      color:'green'
+  }
+  var timer, i = 0;
+
+  return new ProgressBar(config);
+ 
+}
+
 const init = async (path: string) => {
   let fileArr = getAllDirByFilename(path,options.compileDir).filter(item=>isVue(item))
+  const progressBar = getProgressBar(fileArr.length)
+  let index = 0;
   let callback = async (filePath: string) => {
     const code = await readFile(filePath, { encoding: 'utf-8' });
     const fileData = await vueRender(code, options,filePath)
     fileMap.set(filePath, fileData)
     collectPinia(fileData?.scriptData?.vuexRender?.piniaRender)
     collectMixins(fileData?.scriptData?.mixinRender)
+    progressBar.run(index++);
   }
-  
   Promise.all(fileArr.map(callback)).then(res => {
     createFile()
     createPinia()
     createMixins()
   })
+  // console.log(path)
   // const code = await readFile(path, { encoding: 'utf-8' });
-  // const fileData = await vueRender(code, options)
+  // const fileData = await vueRender(code, options,path)
   // // console.log(fileData.contentHtml)
   // fse.outputFileSync('./ljm.vue',fileData.contentHtml)
 }

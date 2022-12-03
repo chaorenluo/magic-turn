@@ -17,8 +17,6 @@ const decomposeTemp = (html:string) =>{
   }
 
   const updateAlias = (str:string) =>{
-    // console.log(str.indexOf("@import"))
-
     if(str.indexOf("@import") == -1) return str;
     let startIndex = 0;
     let endIndex = 0;
@@ -90,7 +88,6 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   let templateNode = templateMap.get("template");
   let scriptData;
   if (scriptNode) {
-    // console.log(filePath)
     scriptData = await scriptRender(scriptNode, options,filePath);
     await templateRender(templateNode, scriptData,filePath,options)
     const { newCode } = await scriptData.render()
