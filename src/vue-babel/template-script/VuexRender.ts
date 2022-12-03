@@ -21,12 +21,11 @@ export default class VuexRender {
   computedModules = new Set();
   methodsModules = new Set();
   defaultStoreName = "index"
-  html = ''
 
-  constructor(_astNode: t.File, _options: any,_this) {
+
+  constructor(_astNode: t.File, _options: any) {
     this.astNode = _astNode;
     this.options = _options;
-    this.html = _this;
   }
 
   isFile(path: string) {

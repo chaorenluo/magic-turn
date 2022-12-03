@@ -90,8 +90,8 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   let templateNode = templateMap.get("template");
   let scriptData;
   if (scriptNode) {
-    console.log(filePath)
-    scriptData = await scriptRender(scriptNode, options,html);
+    // console.log(filePath)
+    scriptData = await scriptRender(scriptNode, options,filePath);
     await templateRender(templateNode, scriptData,filePath,options)
     const { newCode } = await scriptData.render()
     scriptMap.get('script').data = '\n'+newCode+'\n';

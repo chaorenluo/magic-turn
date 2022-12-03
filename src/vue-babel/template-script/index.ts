@@ -20,7 +20,7 @@ const { parse } = parser;
 
 
 
-const scriptRender = async (code: string, options,html) => {
+const scriptRender = async (code: string, options,filePath) => {
   let newAst = parse('', {
     sourceType: 'module'
   })
@@ -182,7 +182,7 @@ const scriptRender = async (code: string, options,html) => {
  isExportIdentifier()
   
   // 转义vuex
-  vuexRender = new VuexRender(ast, options,html);
+  vuexRender = new VuexRender(ast, options);
   await vuexRender.analysisAst()
 
   // 转义mixin
@@ -195,7 +195,7 @@ const scriptRender = async (code: string, options,html) => {
       const nodeName = path.node.key.name;
       if (OptionsApi.Mixins === nodeName) {
         const elements = path.node.value.elements.map(item => item.name)
-        mixinRender = new MixinRender(elements, importRender.importGlobal, options,newAst)
+        mixinRender = new MixinRender(elements, importRender.importGlobal, options,newAst,filePath)
       }
     }
   })

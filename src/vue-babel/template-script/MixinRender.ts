@@ -19,28 +19,21 @@ export default class MixinRender{
   newAst:t.File;
   importMixin = new Set<t.VariableDeclaration>();
   useAttribute = new Map<string,any>();
-  
+  filePath ='';
   static recordMixin:Map<string,any> = new Map();
   
   
-  constructor(_mixinList:Array<string>,importGlobal:any,_options:any,_newAst:t.File) {
+  constructor(_mixinList:Array<string>,importGlobal:any,_options:any,_newAst:t.File,_filePath:string) {
     this.options = _options;
     this.newAst = _newAst;
-    const {alias } = this.options;
     this.mixinList = _mixinList;
+    this.filePath = _filePath;
     importGlobal.forEach(item => {
       item.specifiers.forEach(specifier => {
         const name = specifier.local.name;
         if (this.mixinList.includes(name)) {
           const sourceVal = item.source.value;
-          const pathVal = sourceVal.split("/")
-          const aliasItem = pathVal[0];
-          const aliasPath = alias[pathVal[0]]
-          let fileVal = sourceVal;
-          if (aliasPath) {
-            fileVal = sourceVal.replace(aliasItem, aliasPath);
-          }
-          const file = fileVal.replace('.js', '') + '.js' as string;
+          const file = this.getFilePath(sourceVal)
           let status = fse.existsSync(file)
           if (status) {
             this.filesList.push({
@@ -54,6 +47,23 @@ export default class MixinRender{
       })
     })
   }
+
+  getFilePath(sourceVal:string){
+    const {alias } = this.options;
+    const pathVal = sourceVal.split("/")
+    const filePathVal = this.filePath.split("/")
+    const aliasItem = pathVal[0];
+    const aliasPath = alias[pathVal[0]]
+    let fileVal = sourceVal;
+   if (aliasPath) {
+      fileVal = sourceVal.replace(aliasItem, aliasPath);
+    }else{
+      fileVal = path.join(filePathVal.slice(0,filePathVal.length-1).join('/'),sourceVal)
+    }
+    const file = fileVal.replace('.js', '') + '.js' as string;
+    return file;
+  }
+
    async addMixinCode (filesList: Array<any>, nodeList: Array<any>){
     const callback = async (item:any, key:any) => {
       const nodeItem = nodeList[key];
