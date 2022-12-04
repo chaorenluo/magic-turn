@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import magiCode from './dist/index.cjs'
+import magicTurn from './dist/index.cjs'
 
-const fn = magiCode.default;
+const fn = magicTurn.default;
 fn()

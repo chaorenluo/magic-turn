@@ -1,17 +1,24 @@
 {
-  "name": "converter",
-  "version": "1.0.0",
+  "name": "magic-turn",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "type": "module",
+  "keywords": ["vue2", "vue3"],
   "scripts": {
     "dev": "tsup ./src/index.ts --format cjs,esm --dts --clean --watch",
     "build": "tsup ./src/index.ts --format cjs,esm --dts --clean --minify"
   },
   "bin":{
-    "magiCode":"./index.js"
+    "magicTurn":"./index.js"
   },
-  "author": "",
+  "bugs": "https://github.com/chaorenluo/MagiCode/issues", 
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chaorenluo/MagiCode"
+  },
+  
+  "author": "chaorenluo",
   "license": "ISC",
   "devDependencies": {
     "@babel/types": "7.19.0",
