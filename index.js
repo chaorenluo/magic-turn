@@ -1,6 +1,5 @@
-import s1 from './dist/index.cjs'
+#!/usr/bin/env node
+import magiCode from './dist/index.cjs'
 
-const fn = s1.default;
-// fn('D:\/gitroot\/8591\/touch')
-// fn('/Users/ljm/gitroot/8591/touch')
-// fn('./main.vue')
+const fn = magiCode.default;
+fn()

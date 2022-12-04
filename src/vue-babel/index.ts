@@ -5,13 +5,13 @@ import { Parser,DomHandler, DomUtils, } from "htmlparser2";
 
 
 import {render} from 'dom-serializer';
-import { connected } from 'process';
+import { options } from '../config';
 
 
 const decomposeTemp = (html:string) =>{
     let script = html.lastIndexOf('<script>')>-1 ? html.substring(html.indexOf('<script>')+8,html.lastIndexOf('</script>') ) :''
     return {
-      script:setImportEnd(script),
+      script,
       newHtml:html.replace(script,'LJM')
     }
   }
@@ -80,7 +80,7 @@ const vueRender = async (html: any, options: any, filePath: string) => {
      if(lang && lang==='stylus'){
       elem.attribs['lang'] = 'stylus';
       let content = elem.children[0].data;
-      elem.children[0].data = setImportEnd(content);
+      elem.children[0].data = options.scssTurn ? setImportEnd(content) : content;
      }
     }
   }, dom, true)

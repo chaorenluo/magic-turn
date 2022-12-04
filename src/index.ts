@@ -36,11 +36,16 @@ const getAllDirByFilename = (dir:string,compileDir:Array<string>)=>{
   return resultArr
 }
 
+const compatiblePath = (str)=>{
+  if(!str || typeof str !='string') return str;
+ return str.replaceAll('\\','/')
+}
+
 const collectPinia = (piniaRender) => {
   if (!piniaRender || !piniaRender.piniaNodeList) return
   piniaRender.piniaNodeList.forEach((item) => {
     if (piniaMap.has(item.filePath)) return
-    let filePath = item.filePath.replaceAll('\\','/').replace(options.entranceDir, options.output)
+    let filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
     piniaMap.set(filePath,{piniaNode:item})
   })
 }
@@ -49,7 +54,7 @@ let collectMixins = (mixinRender) => {
   if (!mixinRender) return 
   mixinRender.nodeList.forEach((item) => {
     if (mixinMap.has(item.filePath)) return
-    let filePath = item.filePath.replaceAll('\\','/').replace(options.entranceDir, options.output)
+    let filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
     mixinMap.set(filePath,{mixinCode:item.newCode})
   })
 }
@@ -94,8 +99,8 @@ const getProgressBar = (duration) =>{
  
 }
 
-const init = async (path: string) => {
-  let fileArr = getAllDirByFilename(path,options.compileDir).filter(item=>isVue(item))
+const init = async () => {
+  let fileArr = getAllDirByFilename(options.rootPath,options.compileDir).filter(item=>isVue(item))
   const progressBar = getProgressBar(fileArr.length)
   let index = 0;
   let callback = async (filePath: string) => {

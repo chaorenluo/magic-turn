@@ -28,13 +28,13 @@ const scriptRender = async (code: string, options,filePath) => {
   let dataRender: DataRender;
   let computedRender: ComputedRender;
   let methodsRender: MethodsRender;
-  let lifeCycleRender: LifeCycleRender = new LifeCycleRender(options, newAst)
   let propsRender: PropsRender;
   let watchRender: WatchRender;
   let mixinRender: MixinRender;
   let vuexRender: VuexRender;
   let nuxtRender:NuxtRender
-  let importRender = ImportRender(newAst);
+  let importRender = ImportRender(newAst,options);
+  let lifeCycleRender: LifeCycleRender = new LifeCycleRender(options, newAst,importRender)
   let ruleGlobal = ['$route','$router','$axios','$el']
   const loopProperty = (path) => {
     if (!path.node.property) {

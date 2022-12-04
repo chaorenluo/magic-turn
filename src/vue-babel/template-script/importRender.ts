@@ -10,7 +10,7 @@ type vueApiType = keyof typeof vueApi;
 
 const defaultVueApi = ['reactive']
 
-const ImportRender = (newAst:t.File) => {
+const ImportRender = (newAst:t.File,options:any) => {
   return  {
 
     importGlobal: [],
@@ -59,6 +59,10 @@ const ImportRender = (newAst:t.File) => {
     },
   
     addImportGlobal(node:any) {
+
+      if(options.scssTurn && node.source && node.source.value){
+        node.source.value = node.source.value.replace('.styl','.scss')
+      }
       this.importGlobal.push(node)
     },
   

@@ -1,65 +1,50 @@
-// import path from 'path'
-
-// export const options = {
-//   dataName: 'state',
-//   alias: {
-//     "~": "D:\/gitroot\/8591\/touch\/",
-//     "@": "D:\/gitroot\/8591\/touch\/",
-//   },
-//   piniaStore: {
-//     aliasPrefix: '~/store',
-//     pathVal:'D:\/gitroot\/8591\/touch\/store\/'
-//   },
-//   output:   path.join(__dirname, '..\/newVue\/'),
-//   entranceDir:'D:\/gitroot\/8591\/touch\/',
-//   compileDir:['components','pages']
-// }
-
 import path from 'path'
+import fse from 'fs-extra'
 
-const labelAttribs  = {
-  'van-action-sheet': {
-    'v-model':'v-model:show'
+
+type Config = {
+  dataName?:string,
+  piniaStore?:{
+    aliasPrefix?:string,
+    pathVal?:string
   },
-  'van-dialog': {
-    'v-model':'v-model:show'
-  },
-  'van-share-sheet': {
-    'v-model':'v-model:show'
-  },
-  'van-circle': {
-    'v-model':'v-model:current-rate'
-  },
-  'van-list': {
-    'v-model':'v-model:loading'
-  },
-  'van-popover': {
-    'v-model':'v-model:show'
-  },
-  'van-tabs': {
-    'v-model':'v-model:active'
-  },
-  'van-tree-select': {
-    ':active-id.sync': 'v-model:active-id',
-    ':main-active-index.sync':'v-model:main-active-index'
-  }
+  output?:string,
+  compileDir?:Array<string>,
+  scssTurn?:boolean
 }
 
-export const options = {
+let rootPath = process.cwd()
+let configUrl = path.join(rootPath,'magic.config.json');
+let status = fse.existsSync(configUrl)
+const options = {
   dataName: 'stateData',
+  rootPath,
   alias: {
-    "~": "/Users/ljm/gitroot/hk8591/mobi/",
-    "@": "/Users/ljm/gitroot/hk8591/mobi/",
-    "_MIX_":"/Users/ljm/gitroot/hk8591/mobi/mixin",
+    "~": rootPath,
+    "@": rootPath,
   },
   piniaStore: {
     aliasPrefix: '~/store',
-    pathVal:'/Users/ljm/gitroot/hk8591/mobi/store/'
+    pathVal: path.join(rootPath,'./store')
   },
-  output:   path.join(__dirname, '../newVue/'),
-  entranceDir:'/Users/ljm/gitroot/hk8591/mobi/',
-  compileDir: ['components', 'pages', 'layouts'],
-  labelAttribs
+  output:   path.join(rootPath, '..\/newVue\/'),
+  entranceDir:rootPath,
+  compileDir:['components','pages','layouts'],
+  scssTurn:false
 }
+
+if(status){
+ let config:Config = JSON.parse(fse.readFileSync(configUrl)) as Config;
+ config.output && (options.output =  path.join(rootPath, config.output))
+ config.compileDir && (options.compileDir = config.compileDir)
+ config.dataName && (options.dataName = config.dataName)
+ if(config.piniaStore){
+  config.piniaStore?.aliasPrefix && (options.piniaStore.aliasPrefix =  config.piniaStore?.aliasPrefix );
+  config.piniaStore?.pathVal && (options.piniaStore.pathVal = path.join(rootPath, config.piniaStore?.pathVal));
+  config.scssTurn && (options.scssTurn = config.scssTurn);
+ }
+} 
+
+export {options};
 
 

@@ -1,5 +1,6 @@
 
 import t from '@babel/types';
+import importRender from './ImportRender'
 import {modifyCycleName,createRunFunction, arrowFunctionExpression, variableFunction} from './utils'
 
 interface CycleVariable {
@@ -8,6 +9,8 @@ interface CycleVariable {
   body:any
 }
 
+type GETRETURN<T> = T extends (...args:any)=> infer Y ? Y :string;
+type ImportRenderType  = GETRETURN<typeof importRender>
 
 const cycleTypeV3 = {
   beforeCreate: "beforeCreate",
@@ -31,10 +34,12 @@ export default class LifeCycleAnalysis {
   cycleBodyMap: Map<string, CycleVariable> = new Map();
   newAst:t.File;
   options: any;
+  importRender:ImportRenderType;
 
-  constructor(options:any,_newAst:t.File) {
+  constructor(options:any,_newAst:t.File,_importRender:ImportRenderType) {
     this.options = options;
     this.newAst = _newAst;
+    this.importRender = _importRender
   }
 
   static isCycle(nodeName:CycleTypeV3Type): boolean {
@@ -44,6 +49,7 @@ export default class LifeCycleAnalysis {
   init(cycleNode:any) {
     
     let nodeName  = modifyCycleName(cycleTypeV3[cycleNode.key.name as CycleTypeV3Type],'on');
+    this.importRender.addVueApi(nodeName);
     this.cycleKey.add(nodeName);
     const cycleItem = {
       name: nodeName,
