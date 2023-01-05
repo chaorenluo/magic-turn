@@ -166,6 +166,10 @@ export default class PinnaNode {
         ) {
           let parent = path.parent;
           let value = parent.init || parent.value;
+          if (parent.id && t.isObjectPattern(parent.id)) {
+            path.replaceWith(t.thisExpression());
+            return
+          }
           if (value) {
             let properties = value.properties;
             if (nodeName === PinnaType.state && value.body) {
@@ -177,6 +181,7 @@ export default class PinnaNode {
       },
       ThisExpression(path) {
         const property = path.parent.property;
+        if (!property) return;
         const propertyName = property.name;
         if (propertyName && propertyName.charAt(0) === "$") {
           _this.importGlobal.add(propertyName);
