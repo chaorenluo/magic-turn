@@ -10,7 +10,40 @@ type Config = {
   },
   output?:string,
   compileDir?:Array<string>,
-  scssTurn?:boolean
+  scssTurn?: boolean,
+  labelAttribs?:{
+    [key in string]:string
+  },
+}
+
+const labelAttribs  = {
+  'van-action-sheet': {
+    'v-model':'v-model:show'
+  },
+  'van-dialog': {
+    'v-model':'v-model:show'
+  },
+  'van-share-sheet': {
+    'v-model':'v-model:show'
+  },
+  'van-circle': {
+    'v-model':'v-model:current-rate'
+  },
+  'van-list': {
+    'v-model':'v-model:loading'
+  },
+  'van-popover': {
+    'v-model':'v-model:show'
+  },
+  'van-tabs': {
+    'v-model':'v-model:active'
+  },
+  'van-tree-select': {
+    ':active-id.sync': 'v-model:active-id',
+    ':main-active-index.sync': 'v-model:main-active-index',
+    ':active-id': 'v-model:active-id',
+    ':main-active-index':'v-model:main-active-index'
+  }
 }
 
 let rootPath = process.cwd()
@@ -30,7 +63,8 @@ const options = {
   output:   path.join(rootPath, '..\/newVue\/'),
   entranceDir:rootPath,
   compileDir:['components','pages','layouts'],
-  scssTurn:false
+  scssTurn: false,
+  labelAttribs
 }
 
 if(status){
@@ -41,7 +75,8 @@ if(status){
  if(config.piniaStore){
   config.piniaStore?.aliasPrefix && (options.piniaStore.aliasPrefix =  config.piniaStore?.aliasPrefix );
   config.piniaStore?.pathVal && (options.piniaStore.pathVal = path.join(rootPath, config.piniaStore?.pathVal));
-  config.scssTurn && (options.scssTurn = config.scssTurn);
+   config.scssTurn && (options.scssTurn = config.scssTurn);
+   config.labelAttribs && (options.labelAttribs = {...options.labelAttribs,...config.labelAttribs})
  }
 } 
 
