@@ -13,8 +13,42 @@ type Config = {
   scssTurn?:boolean,
   alias?:{
     [key: string]: string;
+  },
+  labelAttribs?:{
+    [key in string]:string
+  },
+}
+
+const labelAttribs  = {
+  'van-action-sheet': {
+    'v-model':'v-model:show'
+  },
+  'van-dialog': {
+    'v-model':'v-model:show'
+  },
+  'van-share-sheet': {
+    'v-model':'v-model:show'
+  },
+  'van-circle': {
+    'v-model':'v-model:current-rate'
+  },
+  'van-list': {
+    'v-model':'v-model:loading'
+  },
+  'van-popover': {
+    'v-model':'v-model:show'
+  },
+  'van-tabs': {
+    'v-model':'v-model:active'
+  },
+  'van-tree-select': {
+    ':active-id.sync': 'v-model:active-id',
+    ':main-active-index.sync': 'v-model:main-active-index',
+    ':active-id': 'v-model:active-id',
+    ':main-active-index':'v-model:main-active-index'
   }
 }
+
 
 let rootPath = process.cwd()
 let configUrl = path.join(rootPath,'magic.config.json');
@@ -33,7 +67,8 @@ const options = {
   output:   path.join(rootPath, '..\/newVue\/'),
   entranceDir:rootPath,
   compileDir:['components','pages','layouts'],
-  scssTurn:false
+  scssTurn:false,
+  labelAttribs
 }
 
 if(status){
@@ -46,6 +81,7 @@ if(status){
   config.piniaStore?.pathVal && (options.piniaStore.pathVal = path.join(rootPath, config.piniaStore?.pathVal));
   config.scssTurn && (options.scssTurn = config.scssTurn);
   config?.alias && (options.alias = {...options.alias,...config?.alias})
+  config.labelAttribs && (options.labelAttribs = {...options.labelAttribs,...config.labelAttribs})
  }
 } 
 

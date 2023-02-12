@@ -15965,6 +15965,9 @@ var PropsRender = class {
     this.isArrayExpression = this.propsNode.type === "ArrayExpression";
     if (this.isArrayExpression) {
       this.propsNode.elements.forEach((node) => {
+        if (node.value == "value") {
+          node.value = "modelValue" /* NAME */;
+        }
         this.propsKey.add(node.value);
       });
     } else {
@@ -15976,6 +15979,9 @@ var PropsRender = class {
               if (node.argument.name === path5.node.name && !import_types3.default.isSpreadElement(path5.parent)) {
                 path5.parent.init.properties.forEach((v) => {
                   if (v.key) {
+                    if (v.key.name == "value") {
+                      v.key.name = "modelValue" /* NAME */;
+                    }
                     _this.propsKey.add(v.key.name);
                   }
                 });
@@ -15983,6 +15989,9 @@ var PropsRender = class {
             }
           });
         } else {
+          if (node.key.name == "value") {
+            node.key.name = "modelValue" /* NAME */;
+          }
           this.propsKey.add(node.key.name);
         }
       });
@@ -16047,6 +16056,10 @@ var ImportRender = (newAst, options2) => {
       const argument = path5.parent.arguments;
       if (value === vueApi.$emit && argument && argument.length > 0) {
         if (argument[0].value) {
+          let emitName = argument[0].value;
+          if (emitName == "input") {
+            argument[0].value = "update:modelValue" /* EMIT_NAME */;
+          }
           this.emitKey.add(argument[0].value);
         }
         return;
@@ -16621,6 +16634,10 @@ var PinnaNode = class {
         if (nodeName === "actions" /* actions */ || nodeName === "getters" /* getters */ || nodeName === "mutations" /* mutations */ || nodeName === "state" /* state */) {
           let parent = path5.parent;
           let value = parent.init || parent.value;
+          if (parent.id && import_types7.default.isObjectPattern(parent.id)) {
+            path5.replaceWith(import_types7.default.thisExpression());
+            return;
+          }
           if (value) {
             let properties = value.properties;
             if (nodeName === "state" /* state */ && value.body) {
@@ -16633,6 +16650,8 @@ var PinnaNode = class {
       },
       ThisExpression(path5) {
         const property = path5.parent.property;
+        if (!property)
+          return;
         const propertyName = property.name;
         if (propertyName && propertyName.charAt(0) === "$") {
           _this.importGlobal.add(propertyName);
@@ -17376,7 +17395,10 @@ var scriptRender = async (code, options2, filePath) => {
       }
     };
     const dataProps = () => {
-      if (propsRender && (propsRender == null ? void 0 : propsRender.hasPropsKey(name))) {
+      if (name === "value") {
+        property.name = "modelValue" /* NAME */;
+      }
+      if (propsRender && (propsRender == null ? void 0 : propsRender.hasPropsKey(property.name))) {
         newNode.object = import_types10.default.identifier("props");
         return true;
       }
@@ -17503,13 +17525,18 @@ var scriptRender = async (code, options2, filePath) => {
             importRender.addVueApi("ref");
             if (!import_types10.default.isMemberExpression(path5.parent))
               return;
-            if (import_types10.default.isStringLiteral(path5.parent.property)) {
-              path5.parent.object = import_types10.default.identifier(replaceCross(path5.parent.property.value));
+            if (path5.parent.computed) {
+              path5.parent.object = import_types10.default.memberExpression(createCallExpression(import_types10.default.identifier("getCurrentInstance"), []), import_types10.default.identifier("refs"));
+              importRender.addVueApi("getCurrentInstance");
             } else {
-              path5.parent.object = path5.parent.property;
+              if (import_types10.default.isStringLiteral(path5.parent.property)) {
+                path5.parent.object = import_types10.default.identifier(replaceCross(path5.parent.property.value));
+              } else {
+                path5.parent.object = path5.parent.property;
+              }
+              path5.parent.object.name = getRefName(path5.parent.object.name);
+              path5.parent.property = import_types10.default.identifier("value");
             }
-            path5.parent.object.name = getRefName(path5.parent.object.name);
-            path5.parent.property = import_types10.default.identifier("value");
             importRender.addRefKey(path5.parent.object.name);
             return;
           }
@@ -17848,11 +17875,16 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
       delete attribs["slot"];
       delete attribs["v-slot"];
       delete attribs["v-else"];
+      delete attribs["collect-slot"];
       let code = render(elem, {
         encodeEntities: "utf8"
       });
-      let newElement = parseDocument(`<template #${slotName}>${code}</template>`);
+      let newElement = parseDocument(`
+<template #${slotName}>${code}</template>
+`);
       DomUtils.replaceElement(elem, newElement);
+    } else {
+      elem.attribs && delete elem.attribs["collect-slot"];
     }
   };
   const restructuringSlot = (slotArr) => {
@@ -17881,6 +17913,27 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
         DomUtils.appendChild(lastSlot.parent, parseDocument(slotCOde));
       }
     });
+  };
+  const replaceSlotLabel = (elem) => {
+    const attribs = elem.attribs;
+    if (attribs && (attribs["slot"] || attribs["v-slot"])) {
+      let slotName = attribs["slot"] || attribs["v-slot"];
+      delete attribs["slot"];
+      delete attribs["v-slot"];
+      delete attribs["v-else"];
+      delete attribs["collect-slot"];
+      if (elem.name != "template") {
+        let code = render(elem, {
+          encodeEntities: "utf8"
+        });
+        let newElement = parseDocument(`
+<template #${slotName}>${code}</template>
+`);
+        DomUtils.replaceElement(elem, newElement);
+      } else {
+        attribs[`#${slotName}`] = "";
+      }
+    }
   };
   const attribsUpdate = (elem) => {
     if (!options2.labelAttribs)
@@ -17932,6 +17985,9 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
       updateSlot(elem, slotArr);
     }, dom, true);
     restructuringSlot(slotArr);
+    DomUtils.filter((elem) => {
+      replaceSlotLabel(elem);
+    }, dom, true);
   }
 };
 
@@ -18036,6 +18092,35 @@ var vue_babel_default = {
 // src/config.ts
 import path3 from "path";
 import fse3 from "fs-extra";
+var labelAttribs = {
+  "van-action-sheet": {
+    "v-model": "v-model:show"
+  },
+  "van-dialog": {
+    "v-model": "v-model:show"
+  },
+  "van-share-sheet": {
+    "v-model": "v-model:show"
+  },
+  "van-circle": {
+    "v-model": "v-model:current-rate"
+  },
+  "van-list": {
+    "v-model": "v-model:loading"
+  },
+  "van-popover": {
+    "v-model": "v-model:show"
+  },
+  "van-tabs": {
+    "v-model": "v-model:active"
+  },
+  "van-tree-select": {
+    ":active-id.sync": "v-model:active-id",
+    ":main-active-index.sync": "v-model:main-active-index",
+    ":active-id": "v-model:active-id",
+    ":main-active-index": "v-model:main-active-index"
+  }
+};
 var rootPath = process.cwd();
 var configUrl = path3.join(rootPath, "magic.config.json");
 var status = fse3.existsSync(configUrl);
@@ -18053,7 +18138,8 @@ var options = {
   output: path3.join(rootPath, "../newVue/"),
   entranceDir: rootPath,
   compileDir: ["components", "pages", "layouts"],
-  scssTurn: false
+  scssTurn: false,
+  labelAttribs
 };
 var _a, _b, _c, _d;
 if (status) {
@@ -18066,6 +18152,7 @@ if (status) {
     ((_c = config.piniaStore) == null ? void 0 : _c.pathVal) && (options.piniaStore.pathVal = path3.join(rootPath, (_d = config.piniaStore) == null ? void 0 : _d.pathVal));
     config.scssTurn && (options.scssTurn = config.scssTurn);
     (config == null ? void 0 : config.alias) && (options.alias = { ...options.alias, ...config == null ? void 0 : config.alias });
+    config.labelAttribs && (options.labelAttribs = { ...options.labelAttribs, ...config.labelAttribs });
   }
 }
 

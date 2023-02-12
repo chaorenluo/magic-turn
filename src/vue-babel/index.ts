@@ -9,7 +9,7 @@ import { options } from '../config';
 
 
 const decomposeTemp = (html:string) =>{
-    let script = html.lastIndexOf('<script>')>-1 ? html.substring(html.indexOf('<script>')+8,html.lastIndexOf('</script>') ) :''
+  let script = html.lastIndexOf('<script>') > -1 ? html.substring(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')) : ''
     return {
       script,
       newHtml:html.replace(script,'LJM')
@@ -87,6 +87,7 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   let scriptNode = htmlData.script;
   let templateNode = templateMap.get("template");
   let scriptData;
+
   if (scriptNode) {
     scriptData = await scriptRender(scriptNode, options,filePath);
     await templateRender(templateNode, scriptData,filePath,options)

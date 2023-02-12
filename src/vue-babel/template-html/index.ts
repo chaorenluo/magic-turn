@@ -9,7 +9,6 @@ import { getRefName, getCompoentEl,replaceCross } from '../template-script/utils
 
 
 
-
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
 
@@ -275,11 +274,14 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
       delete attribs['slot']
       delete attribs['v-slot']
       delete attribs['v-else']
+      delete  attribs['collect-slot']
       let code = render(elem, {
         encodeEntities: 'utf8',
       })
-      let newElement = parseDocument(`<template #${slotName}>${code}</template>`);
+      let newElement = parseDocument(`\n<template #${slotName}>${code}</template>\n`);
       DomUtils.replaceElement(elem, newElement)
+    } else {
+      elem.attribs &&  delete elem.attribs['collect-slot']
     }
   }
 
@@ -302,6 +304,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
           encodeEntities: 'utf8',
         })
       })
+
       let slotCOde = `<template #${slotName}>${code}</template>`
       if (lastSlot.parent.name === 'template') {
         DomUtils.append(lastSlot.parent,parseDocument(slotCOde))
@@ -309,6 +312,27 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
         DomUtils.appendChild(lastSlot.parent,parseDocument(slotCOde))
       }
     })
+  }
+
+  const replaceSlotLabel = (elem: any) =>{
+    const attribs = elem.attribs;
+    if (attribs && (attribs['slot'] || attribs['v-slot']) ) {
+      let slotName = attribs['slot'] || attribs['v-slot']
+      delete attribs['slot']
+      delete attribs['v-slot']
+      delete attribs['v-else']
+      delete  attribs['collect-slot']
+      if(elem.name != 'template'){
+        let code = render(elem, {
+          encodeEntities: 'utf8',
+        })
+        let newElement = parseDocument(`\n<template #${slotName}>${code}</template>\n`);
+        DomUtils.replaceElement(elem, newElement)
+      }else{
+        attribs[`#${slotName}`] ='';
+      }
+   
+    }
   }
 
   const attribsUpdate = (elem:any) => {
@@ -358,11 +382,13 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     }, dom, true)
     await Promise.all(RenderCallbacks.map(callback => callback()))
     // 扫描Slot
-    let slotArr:Array<Set<any>> = [];
+    let slotArr: Array<Set<any>> = [];
     DomUtils.filter((elem: any) => {
       updateSlot(elem,slotArr)
     }, dom, true);
     restructuringSlot(slotArr)
-
+    DomUtils.filter((elem: any) => {
+      replaceSlotLabel(elem)
+    }, dom, true);
   }
 }

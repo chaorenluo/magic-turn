@@ -119,6 +119,10 @@ export const createReturnStatement = (params:Array<any>|any) =>{
   return t.returnStatement(createObjectExpression(params))
 }
 
+export const isString = (value:any) =>{
+ return Object.prototype.toString.call(value) === "[object String]";
+}
+
 export const createMemberExpression = (arr:Array<any>):t.MemberExpression  | t.Identifier =>{
   if(arr.length <=1){
    return  t.identifier(arr[0])
@@ -197,4 +201,9 @@ export enum VuexFn {
   MapGetters = 'mapGetters',
   mapMutations = 'mapMutations',
   mapActions = 'mapActions'
+}
+
+export enum Vmodel {
+  EMIT_NAME = 'update:modelValue',
+  NAME = 'modelValue'
 }

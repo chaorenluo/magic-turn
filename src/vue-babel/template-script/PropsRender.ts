@@ -1,5 +1,5 @@
 import t from '@babel/types';
-import { createFnVariable } from './utils';
+import { createFnVariable,Vmodel} from './utils';
 import traverse from "@babel/traverse";
 export default class PropsRender{
   propsNode: Array<any> = [];
@@ -24,6 +24,9 @@ export default class PropsRender{
     this.isArrayExpression = this.propsNode.type === 'ArrayExpression'
     if(this.isArrayExpression){
       this.propsNode.elements.forEach((node: any) => {
+        if(node.value == 'value'){
+          node.value = Vmodel.NAME
+        }
         this.propsKey.add(node.value)
       })
     } else {
@@ -35,6 +38,9 @@ export default class PropsRender{
               if (node.argument.name === path.node.name && !t.isSpreadElement(path.parent)) {
                 path.parent.init.properties.forEach((v) => {
                   if(v.key){
+                    if(v.key.name == 'value'){
+                      v.key.name = Vmodel.NAME
+                    }
                     _this.propsKey.add(v.key.name)  
                   }
                 })
@@ -42,6 +48,9 @@ export default class PropsRender{
             }
           })
         } else {
+          if(node.key.name == 'value'){
+            node.key.name = Vmodel.NAME
+          }
           this.propsKey.add(node.key.name) 
         }
       })

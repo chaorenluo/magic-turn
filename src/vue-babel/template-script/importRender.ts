@@ -1,5 +1,5 @@
 
-import { modifyCycleName,createImport,createFnVariable,createArrayExpression,filterImport} from './utils';
+import { modifyCycleName,createImport,createFnVariable,createArrayExpression,filterImport,Vmodel} from './utils';
 import t from '@babel/types';
 const vueApi = {
   "$emit": "emit",
@@ -74,6 +74,10 @@ const ImportRender = (newAst:t.File,options:any) => {
       const argument = path.parent.arguments;
       if (value === vueApi.$emit && argument && argument.length > 0) {
         if (argument[0].value) {
+          let emitName = argument[0].value;
+          if(emitName == 'input'){
+            argument[0].value = Vmodel.EMIT_NAME
+          }
           this.emitKey.add(argument[0].value) 
         }
         return

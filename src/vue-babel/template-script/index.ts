@@ -14,7 +14,7 @@ import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
 import VuexRender from './VuexRender'
 import NuxtRender from "../template-nuxt";
-import { OptionsApi,getCompoentEl,getRefName,replaceCross} from './utils'
+import { OptionsApi,getCompoentEl,getRefName,replaceCross, createCallExpression,Vmodel} from './utils'
 const { parse } = parser;
 
 
@@ -108,7 +108,11 @@ const scriptRender = async (code: string, options,filePath) => {
       }
     }
     const dataProps = () => {
-      if (propsRender && propsRender?.hasPropsKey(name)) {
+      // 兼容vue3 v-model写法
+      if(name === 'value'){
+        property.name = Vmodel.NAME
+      }
+      if (propsRender && propsRender?.hasPropsKey(property.name)) {
         newNode.object = t.identifier('props')
         return true;
       }
@@ -249,15 +253,19 @@ const scriptRender = async (code: string, options,filePath) => {
           if (name === '$refs') {
             importRender.addVueApi('ref');
             if(!t.isMemberExpression(path.parent)) return
-            if (t.isStringLiteral(path.parent.property)) {
-              path.parent.object = t.identifier(replaceCross(path.parent.property.value));
-            } else {
-              path.parent.object = path.parent.property
+            if(path.parent.computed){
+              path.parent.object =t.memberExpression(createCallExpression(t.identifier('getCurrentInstance'),[]),t.identifier('refs'))
+              importRender.addVueApi('getCurrentInstance')
+            }else{
+              if (t.isStringLiteral(path.parent.property)) {
+                path.parent.object = t.identifier(replaceCross(path.parent.property.value));
+              }else {
+                path.parent.object = path.parent.property
+              }
+    
+              path.parent.object.name = getRefName(path.parent.object.name);
+              path.parent.property = t.identifier('value')
             }
-  
-            path.parent.object.name = getRefName(path.parent.object.name);
-            path.parent.property = t.identifier('value')
-  
             importRender.addRefKey(path.parent.object.name) 
             return
           }
