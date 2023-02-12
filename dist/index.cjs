@@ -16997,6 +16997,13 @@ var VuexRender = class {
         });
       });
     }
+    if (!this.piniaModules.get("index")) {
+      this.piniaModules.set("index", {
+        importUrl: "index",
+        importName: "index",
+        isFilter: true
+      });
+    }
   }
   matchingName(array) {
     let str = "";
@@ -17075,11 +17082,13 @@ var VuexRender = class {
     let imports = [];
     let hooks = [];
     this.piniaModules.forEach((item) => {
-      let importName = getPiniaName(item.importName);
-      let importDeclaration = this.createPiniaImport(importName, item.importUrl);
-      let variableDeclaration = this.createPiniaHook(item.importName);
-      imports.push(importDeclaration);
-      hooks.push(variableDeclaration);
+      if (!item.isFilter) {
+        let importName = getPiniaName(item.importName);
+        let importDeclaration = this.createPiniaImport(importName, item.importUrl);
+        let variableDeclaration = this.createPiniaHook(item.importName);
+        imports.push(importDeclaration);
+        hooks.push(variableDeclaration);
+      }
     });
     imports.concat(hooks).forEach((item) => body.splice(index, 0, item));
   }
@@ -18067,6 +18076,7 @@ if (status) {
     ((_a = config.piniaStore) == null ? void 0 : _a.aliasPrefix) && (options.piniaStore.aliasPrefix = (_b = config.piniaStore) == null ? void 0 : _b.aliasPrefix);
     ((_c = config.piniaStore) == null ? void 0 : _c.pathVal) && (options.piniaStore.pathVal = import_path3.default.join(rootPath, (_d = config.piniaStore) == null ? void 0 : _d.pathVal));
     config.scssTurn && (options.scssTurn = config.scssTurn);
+    (config == null ? void 0 : config.alias) && (options.alias = { ...options.alias, ...config == null ? void 0 : config.alias });
   }
 }
 
@@ -18142,7 +18152,7 @@ var getProgressBar = (duration) => {
     current: 0,
     showNumber: true,
     tip: {
-      0: "\u5F00\u59CB\u8F6C\u63621",
+      0: "\u5F00\u59CB\u8F6C\u6362",
       50: "\u8F6C\u6362\u4E00\u534A\u5566\uFF0C\u4E0D\u8981\u7740\u6025\u2026\u2026",
       75: "\u9A6C\u4E0A\u5C31\u8F6C\u6362\u5B8C\u4E86\u2026\u2026",
       100: "\u8F6C\u6362\u5B8C\u6210\uFF0C\u6587\u4EF6\u5DF2\u751F\u6210"
@@ -18171,7 +18181,6 @@ var init = async () => {
     createMixins();
   });
 };
-init();
 var src_default = init;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {});

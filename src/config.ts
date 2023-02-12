@@ -10,7 +10,10 @@ type Config = {
   },
   output?:string,
   compileDir?:Array<string>,
-  scssTurn?:boolean
+  scssTurn?:boolean,
+  alias?:{
+    [key: string]: string;
+  }
 }
 
 let rootPath = process.cwd()
@@ -42,6 +45,7 @@ if(status){
   config.piniaStore?.aliasPrefix && (options.piniaStore.aliasPrefix =  config.piniaStore?.aliasPrefix );
   config.piniaStore?.pathVal && (options.piniaStore.pathVal = path.join(rootPath, config.piniaStore?.pathVal));
   config.scssTurn && (options.scssTurn = config.scssTurn);
+  config?.alias && (options.alias = {...options.alias,...config?.alias})
  }
 } 
 

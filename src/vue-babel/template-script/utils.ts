@@ -187,7 +187,8 @@ export enum OptionsApi {
 
 export type piniaModuleItem = {
   importUrl:string,
-  importName:string
+  importName:string,
+  isFilter?:boolean
 }
 
 

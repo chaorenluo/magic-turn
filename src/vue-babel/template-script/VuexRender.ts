@@ -197,7 +197,13 @@ export default class VuexRender {
         }); 
       });
     }
-    
+    if(!this.piniaModules.get('index')){
+      this.piniaModules.set('index',{
+        importUrl:'index',
+        importName:'index',
+        isFilter:true
+      });
+    }
   }
 
   matchingName(array:Array<string>){
@@ -284,11 +290,13 @@ export default class VuexRender {
     let imports:Array<t.ImportDeclaration> = [];
     let hooks:Array<t.VariableDeclaration> = [];
     this.piniaModules.forEach(item=>{
-      let importName = getPiniaName(item.importName)
-      let importDeclaration = this.createPiniaImport(importName,item.importUrl)
-      let variableDeclaration = this.createPiniaHook(item.importName)
-      imports.push(importDeclaration);
-      hooks.push(variableDeclaration)
+      if(!item.isFilter){
+        let importName = getPiniaName(item.importName)
+        let importDeclaration = this.createPiniaImport(importName,item.importUrl)
+        let variableDeclaration = this.createPiniaHook(item.importName)
+        imports.push(importDeclaration);
+        hooks.push(variableDeclaration)
+      }
     })
 
     imports.concat(hooks).forEach(item=>body.splice(index,0,item));
