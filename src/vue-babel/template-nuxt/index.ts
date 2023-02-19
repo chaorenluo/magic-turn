@@ -1,7 +1,7 @@
 import t from '@babel/types';
 import traverse from "@babel/traverse";
 import {createRunFunction,createCallExpression,arrowFunctionExpression,createObjectExpression,createFnVariable} from '../template-script/utils'
-import importRender from '../template-script/importRender'
+
 
 export default class NuxtRender{
     astNode:t.File;

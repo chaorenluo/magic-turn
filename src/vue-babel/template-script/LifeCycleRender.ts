@@ -1,7 +1,7 @@
 
 import t from '@babel/types';
 import importRender from './ImportRender'
-import {modifyCycleName,createRunFunction, arrowFunctionExpression, variableFunction} from './utils'
+import {modifyCycleName,createRunFunction, arrowFunctionExpression, variableFunction,GetRenderType} from './utils'
 
 interface CycleVariable {
   name: string;
@@ -9,8 +9,7 @@ interface CycleVariable {
   body:any
 }
 
-type GETRETURN<T> = T extends (...args:any)=> infer Y ? Y :string;
-type ImportRenderType  = GETRETURN<typeof importRender>
+type ImportRenderType  = GetRenderType<typeof importRender>
 
 const cycleTypeV3 = {
   beforeCreate: "beforeCreate",

@@ -14616,9 +14616,9 @@ var require_traverse = __commonJS({
     Object.defineProperty(exports, "__esModule", {
       value: true
     });
-    exports.default = traverse8;
+    exports.default = traverse10;
     var _definitions = require_definitions();
-    function traverse8(node, handlers, state) {
+    function traverse10(node, handlers, state) {
       if (typeof handlers === "function") {
         handlers = {
           enter: handlers
@@ -15603,21 +15603,110 @@ __export(src_exports, {
 });
 module.exports = __toCommonJS(src_exports);
 var import_promises = require("fs/promises");
-var import_path4 = __toESM(require("path"), 1);
+var import_path5 = __toESM(require("path"), 1);
 var import_fs2 = __toESM(require("fs"), 1);
-var import_fs_extra4 = __toESM(require("fs-extra"), 1);
+var import_fs_extra6 = __toESM(require("fs-extra"), 1);
+var import_types12 = __toESM(require_lib3(), 1);
 
 // src/vue-babel/template-script/index.ts
-var import_parser3 = __toESM(require("@babel/parser"), 1);
+var import_parser4 = __toESM(require("@babel/parser"), 1);
 var import_types10 = __toESM(require_lib3(), 1);
 var import_generator3 = __toESM(require("@babel/generator"), 1);
-var import_traverse6 = __toESM(require("@babel/traverse"), 1);
+var import_traverse7 = __toESM(require("@babel/traverse"), 1);
 
 // src/vue-babel/template-script/utils.ts
+var import_fs_extra2 = __toESM(require("fs-extra"), 1);
 var import_types = __toESM(require_lib3(), 1);
 var import_traverse = __toESM(require("@babel/traverse"), 1);
+
+// src/config.ts
+var import_path = __toESM(require("path"), 1);
+var import_fs_extra = __toESM(require("fs-extra"), 1);
+var labelAttribs = {
+  "van-action-sheet": {
+    "v-model": "v-model:show"
+  },
+  "van-dialog": {
+    "v-model": "v-model:show"
+  },
+  "van-share-sheet": {
+    "v-model": "v-model:show"
+  },
+  "van-circle": {
+    "v-model": "v-model:current-rate"
+  },
+  "van-list": {
+    "v-model": "v-model:loading"
+  },
+  "van-popover": {
+    "v-model": "v-model:show"
+  },
+  "van-tabs": {
+    "v-model": "v-model:active"
+  },
+  "van-tree-select": {
+    ":active-id.sync": "v-model:active-id",
+    ":main-active-index.sync": "v-model:main-active-index",
+    ":active-id": "v-model:active-id",
+    ":main-active-index": "v-model:main-active-index"
+  }
+};
+var rootPath = process.cwd();
+var configUrl = import_path.default.join(rootPath, "magic.config.json");
+var status = import_fs_extra.default.existsSync(configUrl);
+var options = {
+  dataName: "stateData",
+  rootPath,
+  alias: {
+    "~": rootPath,
+    "@": rootPath
+  },
+  piniaStore: {
+    aliasPrefix: "~/store",
+    pathVal: import_path.default.join(rootPath, "./store")
+  },
+  output: import_path.default.join(rootPath, "../newVue/"),
+  entranceDir: rootPath,
+  compileDir: ["components", "pages", "layouts"],
+  scssTurn: false,
+  labelAttribs,
+  fileExtension: [".vue", ".js", ".ts"]
+};
+var _a, _b, _c, _d;
+if (status) {
+  let config = JSON.parse(import_fs_extra.default.readFileSync(configUrl));
+  config.output && (options.output = import_path.default.join(rootPath, config.output));
+  config.compileDir && (options.compileDir = config.compileDir);
+  config.dataName && (options.dataName = config.dataName);
+  if (config.piniaStore) {
+    ((_a = config.piniaStore) == null ? void 0 : _a.aliasPrefix) && (options.piniaStore.aliasPrefix = (_b = config.piniaStore) == null ? void 0 : _b.aliasPrefix);
+    ((_c = config.piniaStore) == null ? void 0 : _c.pathVal) && (options.piniaStore.pathVal = import_path.default.join(rootPath, (_d = config.piniaStore) == null ? void 0 : _d.pathVal));
+    config.scssTurn && (options.scssTurn = config.scssTurn);
+    (config == null ? void 0 : config.alias) && (options.alias = { ...options.alias, ...config == null ? void 0 : config.alias });
+    config.labelAttribs && (options.labelAttribs = { ...options.labelAttribs, ...config.labelAttribs });
+  }
+}
+
+// src/vue-babel/template-script/utils.ts
 var modifyCycleName = (str, prefix = "") => {
   return prefix + str.charAt(0).toUpperCase() + str.substring(1);
+};
+var adaptationFolder = (value) => {
+  if (!value)
+    return value;
+  let arr = value.split(".");
+  let suffix = "." + arr[arr.length];
+  if (options.fileExtension.includes(suffix)) {
+    return value;
+  }
+  return (import_fs_extra2.default.existsSync(value) ? value + "/index" : value).replaceAll("\\", "/");
+};
+var underlineToHump = (str) => {
+  if (!str)
+    return "";
+  return str.replace(/-(\w)/g, (_, letter) => {
+    return letter.toUpperCase();
+  });
 };
 var getPiniaName = (name) => {
   return modifyCycleName(name, "use") + "Store";
@@ -15744,10 +15833,10 @@ var replaceIdentifier = (ast, oldName, newName) => {
   let program = import_types.default.program([statement]);
   const file = import_types.default.file(program);
   import_traverse.default.default(file, {
-    Identifier(path5) {
-      let name = path5.node.name;
+    Identifier(path6) {
+      let name = path6.node.name;
       if (name === oldName) {
-        path5.node.name = newName;
+        path6.node.name = newName;
       }
     }
   });
@@ -15986,9 +16075,9 @@ var PropsRender = class {
       this.propsNode.properties.forEach((node) => {
         if (import_types3.default.isSpreadElement(node)) {
           import_traverse2.default.default(this.oldAst, {
-            Identifier(path5) {
-              if (node.argument.name === path5.node.name && !import_types3.default.isSpreadElement(path5.parent)) {
-                path5.parent.init.properties.forEach((v) => {
+            Identifier(path6) {
+              if (node.argument.name === path6.node.name && !import_types3.default.isSpreadElement(path6.parent)) {
+                path6.parent.init.properties.forEach((v) => {
                   if (v.key) {
                     if (v.key.name == "value") {
                       v.key.name = "modelValue" /* NAME */;
@@ -16024,6 +16113,7 @@ var defaultVueApi = ["reactive"];
 var ImportRender = (newAst, options2) => {
   return {
     importGlobal: [],
+    importDeclarationMap: /* @__PURE__ */ new Map(),
     vueApiImports: new Set(defaultVueApi),
     hookMap: /* @__PURE__ */ new Map(),
     globalApi: /* @__PURE__ */ new Set(),
@@ -16058,13 +16148,18 @@ var ImportRender = (newAst, options2) => {
       if (options2.scssTurn && node.source && node.source.value) {
         node.source.value = node.source.value.replace(".styl", ".scss");
       }
+      let value = node.source.value;
+      node.specifiers.map((exportObj) => {
+        const name = exportObj.local.name;
+        this.importDeclarationMap.set(name, value);
+      });
       this.importGlobal.push(node);
     },
     addVueApi(value) {
       this.vueApiImports.add(value);
     },
-    addApiKey(value, path5) {
-      const argument = path5.parent.arguments;
+    addApiKey(value, path6) {
+      const argument = path6.parent.arguments;
       if (value === vueApi.$emit && argument && argument.length > 0) {
         if (argument[0].value) {
           let emitName = argument[0].value;
@@ -16315,8 +16410,8 @@ var WatchRender = class {
 };
 
 // src/vue-babel/template-script/MixinRender.ts
-var import_fs_extra = __toESM(require("fs-extra"), 1);
-var import_path = __toESM(require("path"), 1);
+var import_fs_extra3 = __toESM(require("fs-extra"), 1);
+var import_path2 = __toESM(require("path"), 1);
 var import_generator = __toESM(require("@babel/generator"), 1);
 var import_types6 = __toESM(require_lib3(), 1);
 var MixinRender = class {
@@ -16369,7 +16464,7 @@ var MixinRender = class {
         if (this.mixinList.includes(name)) {
           const sourceVal = item.source.value;
           const file = this.getFilePath(sourceVal);
-          let status2 = import_fs_extra.default.existsSync(file);
+          let status2 = import_fs_extra3.default.existsSync(file);
           if (status2) {
             this.filesList.push({
               path: file,
@@ -16392,7 +16487,7 @@ var MixinRender = class {
     if (aliasPath) {
       fileVal = sourceVal.replace(aliasItem, aliasPath);
     } else {
-      fileVal = import_path.default.join(filePathVal.slice(0, filePathVal.length - 1).join("/"), sourceVal);
+      fileVal = import_path2.default.join(filePathVal.slice(0, filePathVal.length - 1).join("/"), sourceVal);
     }
     const file = fileVal.replace(".js", "") + ".js";
     return file;
@@ -16400,8 +16495,8 @@ var MixinRender = class {
   async addMixinCode(filesList, nodeList) {
     const callback = async (item, key) => {
       const nodeItem = nodeList[key];
-      const { methodsRender, computedRender, dataRender, vuexRender, render: render3, importRender } = nodeItem;
-      let { newAst } = await render3();
+      const { methodsRender, computedRender, dataRender, vuexRender, initialization, importRender } = nodeItem;
+      let { newAst } = await initialization();
       const methodsKey = methodsRender ? Array.from(methodsRender.methodsKey) : [];
       const computedKey = computedRender ? Array.from(computedRender.computedKey) : [];
       const reactiveKey = dataRender ? [dataRender.options.dataName] : [];
@@ -16450,13 +16545,13 @@ var MixinRender = class {
   }
   async initMixin() {
     let fileCallback = async (item) => {
-      let filePath = import_path.default.resolve(item.path);
-      let fileCode = import_fs_extra.default.readFileSync(filePath, { encoding: "utf-8" });
+      let filePath = import_path2.default.resolve(item.path);
+      let fileCode = import_fs_extra3.default.readFileSync(filePath, { encoding: "utf-8" });
       return { fileCode, name: item.name, filePath };
     };
     let scriptCallback = async (codeItem) => {
       let mixinOptions = { ...this.options, dataName: `${this.options.dataName}_${codeItem.name}` };
-      const scriptCode = await scriptRender(codeItem.fileCode, mixinOptions);
+      const scriptCode = await scriptRender(codeItem.fileCode, mixinOptions, this.filePath);
       return { ...scriptCode, filePath: codeItem.filePath };
     };
     this.codeList = await Promise.all(this.filesList.map(fileCallback));
@@ -16507,21 +16602,141 @@ var MixinRender = class {
 };
 MixinRender.recordMixin = /* @__PURE__ */ new Map();
 
+// src/vue-babel/template-script/ComponentsRender.ts
+var import_parser2 = __toESM(require("@babel/parser"), 1);
+var import_traverse3 = __toESM(require("@babel/traverse"), 1);
+var import_fs_extra4 = __toESM(require("fs-extra"), 1);
+var import_path3 = __toESM(require("path"), 1);
+var { parse: parse2 } = import_parser2.default;
+var ComponentsRender = class {
+  constructor() {
+    this.components = /* @__PURE__ */ new Map();
+    this.exampleRef = /* @__PURE__ */ new Map();
+  }
+  init(objectExpression, importRenders, _filePath) {
+    objectExpression.properties.map((item) => {
+      let key = item.value.name;
+      let value = importRenders.importDeclarationMap.get(key);
+      if (key && value) {
+        let data = this.searchComponentsFile(value, key, _filePath);
+        if (data) {
+          this.components.set(key, {
+            src: data.src
+          });
+        }
+      }
+    });
+  }
+  searchComponentsFile(value, key, filePath) {
+    filePath = filePath.replaceAll("\\", "/");
+    value = value.replaceAll("\\", "/");
+    let valArr = value.split("/");
+    let prefix = options.alias[valArr[0]];
+    let src = value;
+    let fileSuffix = src.split(".");
+    let suffix = [".vue", ".js", ".ts"];
+    if (value.indexOf("../") > -1 || value.indexOf("./") > -1) {
+      let arr = filePath.split("/");
+      src = import_path3.default.resolve(arr.slice(0, arr.length - 1).join("/"), value);
+    }
+    if (prefix) {
+      src = import_path3.default.join(prefix, valArr.slice(1, valArr.length).join("/"));
+    }
+    if (fileSuffix.includes("vue")) {
+      return {
+        src
+      };
+    }
+    src = adaptationFolder(src);
+    let suffixType = "";
+    let isFile = false;
+    for (const key2 in suffix) {
+      suffixType = suffix[key2];
+      let newSrc = src + suffixType;
+      if (import_fs_extra4.default.existsSync(newSrc)) {
+        isFile = true;
+        break;
+      } else {
+      }
+    }
+    if (suffixType === ".vue" && isFile) {
+      return {
+        src: src + suffixType
+      };
+    }
+    if (suffixType != ".vue" && isFile) {
+      return this.loopLookPath(src + suffixType, key);
+    }
+    return false;
+  }
+  loopLookPath(filePath, key) {
+    let fileContent = import_fs_extra4.default.readFileSync(filePath, "utf8");
+    let ast = parse2(fileContent, {
+      sourceType: "module"
+    });
+    let importDeclarationMap = /* @__PURE__ */ new Map();
+    let data = null;
+    const _this = this;
+    import_traverse3.default.default(ast, {
+      ImportDeclaration(path6) {
+        let node = path6.node;
+        let value = node.source.value;
+        node.specifiers.map((exportObj) => {
+          const name = exportObj.local.name;
+          importDeclarationMap.set(name, value);
+        });
+      },
+      ExportDefaultDeclaration(path6) {
+        let key2 = path6.node.declaration.name;
+        let value = importDeclarationMap.get(key2);
+        data = _this.searchComponentsFile(value, key2, filePath);
+      },
+      ExportNamedDeclaration(path6) {
+        let specifiers = path6.node.specifiers;
+        if (specifiers) {
+          for (let index = 0; index < specifiers.length; index++) {
+            const item = specifiers[index];
+            let name = item.exported.name;
+            if (name === key) {
+              let value = importDeclarationMap.get(key);
+              data = _this.searchComponentsFile(value, key, filePath);
+              break;
+            }
+          }
+        }
+      }
+    });
+    return data;
+  }
+  addExampleRef(path6) {
+    let refName = path6.parentPath.node.property.name;
+    let property = path6.parentPath.parentPath.node.property;
+    if (property) {
+      if (this.exampleRef.has(refName)) {
+        let setArr = this.exampleRef.get(refName);
+        setArr == null ? void 0 : setArr.add(property.name);
+      } else {
+        this.exampleRef.set(refName, /* @__PURE__ */ new Set([property.name]));
+      }
+    }
+  }
+};
+
 // src/vue-babel/template-script/VuexRender.ts
-var import_traverse4 = __toESM(require("@babel/traverse"), 1);
+var import_traverse5 = __toESM(require("@babel/traverse"), 1);
 var import_types8 = __toESM(require_lib3(), 1);
 var import_fs = __toESM(require("fs"), 1);
 
 // src/vue-babel/template-Pinia/PiniaRender.ts
-var import_fs_extra2 = __toESM(require("fs-extra"), 1);
-var import_path2 = __toESM(require("path"), 1);
+var import_fs_extra5 = __toESM(require("fs-extra"), 1);
+var import_path4 = __toESM(require("path"), 1);
 
 // src/vue-babel/template-Pinia/PiniaNode.ts
-var import_parser2 = __toESM(require("@babel/parser"), 1);
+var import_parser3 = __toESM(require("@babel/parser"), 1);
 var import_types7 = __toESM(require_lib3(), 1);
-var import_traverse3 = __toESM(require("@babel/traverse"), 1);
+var import_traverse4 = __toESM(require("@babel/traverse"), 1);
 var import_generator2 = __toESM(require("@babel/generator"), 1);
-var { parse: parse2 } = import_parser2.default;
+var { parse: parse3 } = import_parser3.default;
 var PinnaNode = class {
   constructor(_fileCode, _filePath, _fileName, _pathPrefix, _options) {
     this.astNode = {};
@@ -16556,8 +16771,8 @@ var PinnaNode = class {
     let variableDeclaration = import_types7.default.variableDeclaration("const", [declarations]);
     return variableDeclaration;
   }
-  getParentObjectMethod(path5, name) {
-    let newPath = path5;
+  getParentObjectMethod(path6, name) {
+    let newPath = path6;
     while (newPath && newPath.type != "ObjectMethod") {
       newPath = newPath.parentPath;
     }
@@ -16608,8 +16823,8 @@ var PinnaNode = class {
       });
     }
   }
-  analysisCallExpression(path5) {
-    const args = path5.node.arguments;
+  analysisCallExpression(path6) {
+    const args = path6.node.arguments;
     const val = args[0].value;
     if (!val)
       return;
@@ -16621,7 +16836,7 @@ var PinnaNode = class {
     }
     if (keyVal != this.fileName) {
       this.importModules.add(key);
-      this.getParentObjectMethod(path5, key);
+      this.getParentObjectMethod(path6, key);
       piniaPath[0] = getPiniaVariable(piniaPath[0]);
     } else {
       piniaPath[0] = "this";
@@ -16631,22 +16846,22 @@ var PinnaNode = class {
       createMemberExpression(piniaPath.reverse()),
       params
     );
-    path5.replaceWith(callExpression);
+    path6.replaceWith(callExpression);
   }
   createAst() {
-    const ast = parse2(this.fileCode, {
+    const ast = parse3(this.fileCode, {
       sourceType: "module"
     });
     this.filterExport(ast);
     let _this = this;
-    import_traverse3.default.default(ast, {
-      Identifier(path5) {
-        const nodeName = path5.node.name;
+    import_traverse4.default.default(ast, {
+      Identifier(path6) {
+        const nodeName = path6.node.name;
         if (nodeName === "actions" /* actions */ || nodeName === "getters" /* getters */ || nodeName === "mutations" /* mutations */ || nodeName === "state" /* state */) {
-          let parent = path5.parent;
+          let parent = path6.parent;
           let value = parent.init || parent.value;
           if (parent.id && import_types7.default.isObjectPattern(parent.id)) {
-            path5.replaceWith(import_types7.default.thisExpression());
+            path6.replaceWith(import_types7.default.thisExpression());
             return;
           }
           if (value) {
@@ -16659,8 +16874,8 @@ var PinnaNode = class {
           }
         }
       },
-      ThisExpression(path5) {
-        const property = path5.parent.property;
+      ThisExpression(path6) {
+        const property = path6.parent.property;
         if (!property)
           return;
         const propertyName = property.name;
@@ -16669,42 +16884,42 @@ var PinnaNode = class {
           if (propertyName == "$axios") {
             property.name = "$fetch";
           }
-          path5.parentPath.replaceWith(property);
+          path6.parentPath.replaceWith(property);
         }
       },
-      MemberExpression(path5) {
-        let nodeName = path5.node.object.name;
-        const property = path5.node.property;
-        let newNode = path5.node;
+      MemberExpression(path6) {
+        let nodeName = path6.node.object.name;
+        const property = path6.node.property;
+        let newNode = path6.node;
         if (nodeName === "state" /* state */) {
           newNode.object = import_types7.default.thisExpression();
-          path5.replaceWith(newNode);
+          path6.replaceWith(newNode);
         }
         if (nodeName === "rootState") {
-          _this.getParentObjectMethod(path5, property.name);
+          _this.getParentObjectMethod(path6, property.name);
           newNode = newNode.property;
           newNode.name = getPiniaVariable(newNode.name);
-          path5.replaceWith(newNode);
+          path6.replaceWith(newNode);
         }
       },
-      CallExpression(path5) {
-        if (path5.node.callee.property) {
-          let fnName = path5.node.callee.property.name;
+      CallExpression(path6) {
+        if (path6.node.callee.property) {
+          let fnName = path6.node.callee.property.name;
           if (["commit", "dispatch"].includes(fnName)) {
-            _this.analysisCallExpression(path5);
+            _this.analysisCallExpression(path6);
           }
         } else {
-          let fnName = path5.node.callee.name;
+          let fnName = path6.node.callee.name;
           if (["commit", "dispatch"].includes(fnName)) {
-            let size = path5.node.arguments[0].value.split("/").length;
+            let size = path6.node.arguments[0].value.split("/").length;
             if (size > 1) {
-              _this.analysisCallExpression(path5);
+              _this.analysisCallExpression(path6);
               return;
             }
             let callExpression = _this.createCallExpression(
-              path5.node.arguments
+              path6.node.arguments
             );
-            path5.replaceWith(callExpression);
+            path6.replaceWith(callExpression);
           }
         }
       }
@@ -16767,16 +16982,16 @@ var PinnaNode = class {
       ${actions}
     })
     `;
-    const ast = parse2(piniaTemplate, {
+    const ast = parse3(piniaTemplate, {
       sourceType: "module"
     });
     this.additional(ast.program);
     this.addImportHooks(ast.program);
     this.addImportPinia(ast.program);
     let _this = this;
-    import_traverse3.default.default(ast, {
-      ObjectProperty(path5) {
-        const node = path5.node;
+    import_traverse4.default.default(ast, {
+      ObjectProperty(path6) {
+        const node = path6.node;
         const nodeName = node.key.name;
         if (nodeName === "state" /* state */ && node.value.body) {
           let properties = node.value.body.properties;
@@ -16815,10 +17030,10 @@ var PiniaRender = class {
     let fileCallback = async (key) => {
       let piniaModuleItem2 = this.fileNameList.get(key);
       if (!PinnaNode.cacheNode.has(piniaModuleItem2 == null ? void 0 : piniaModuleItem2.importName)) {
-        const filePath = import_path2.default.join(this.options.piniaStore.pathVal, piniaModuleItem2 == null ? void 0 : piniaModuleItem2.importUrl) + ".js";
-        let status2 = import_fs_extra2.default.existsSync(filePath);
+        const filePath = import_path4.default.join(this.options.piniaStore.pathVal, piniaModuleItem2 == null ? void 0 : piniaModuleItem2.importUrl) + ".js";
+        let status2 = import_fs_extra5.default.existsSync(filePath);
         if (status2) {
-          let fileCode = await import_fs_extra2.default.readFileSync(import_path2.default.resolve(filePath), { encoding: "utf-8" });
+          let fileCode = await import_fs_extra5.default.readFileSync(import_path4.default.resolve(filePath), { encoding: "utf-8" });
           let fileName = piniaModuleItem2.importName.substr(piniaModuleItem2.importName.lastIndexOf("/") + 1) + "Store";
           let options2 = this.options;
           let piniaNode = new PinnaNode(fileCode, filePath, fileName, piniaModuleItem2.importName, options2);
@@ -16854,8 +17069,8 @@ var VuexRender = class {
     this.astNode = _astNode;
     this.options = _options;
   }
-  isFile(path5) {
-    let filePath = `${this.options.piniaStore.pathVal}/${path5}.js`;
+  isFile(path6) {
+    let filePath = `${this.options.piniaStore.pathVal}/${path6}.js`;
     return import_fs.default.existsSync(filePath);
   }
   createComputed(methName, methBody, storeName) {
@@ -17057,8 +17272,8 @@ var VuexRender = class {
       }
     });
   }
-  analysisCallExpression(path5) {
-    const args = path5.node.arguments;
+  analysisCallExpression(path6) {
+    const args = path6.node.arguments;
     const val = args[0].value;
     let fnArr = [];
     if (!val)
@@ -17076,7 +17291,7 @@ var VuexRender = class {
     fnArr.push(piniaPath[piniaPath.length - 1]);
     const params = args.slice(1, args.length);
     let callExpression = createCallExpression(createMemberExpression(fnArr.reverse()), params);
-    path5.replaceWith(callExpression);
+    path6.replaceWith(callExpression);
   }
   createPiniaImport(importName, importUrl) {
     if (importUrl.charAt(0) === "/") {
@@ -17127,8 +17342,8 @@ var VuexRender = class {
       });
     }
   }
-  loopJoiningPath(path5, filePath) {
-    let parentPath = path5.parentPath;
+  loopJoiningPath(path6, filePath) {
+    let parentPath = path6.parentPath;
     if (!import_types8.default.isMemberExpression(parentPath.node)) {
       return;
     }
@@ -17143,8 +17358,8 @@ var VuexRender = class {
     if (pathArr.length === 0)
       return filePath;
     for (let index = 0; index < pathArr.length; index++) {
-      let path5 = pathArr.slice(0, pathArr.length - index);
-      let url = path5.join("/");
+      let path6 = pathArr.slice(0, pathArr.length - index);
+      let url = path6.join("/");
       let status2 = this.isFile(url);
       if (status2) {
         filePath = url;
@@ -17153,54 +17368,54 @@ var VuexRender = class {
     }
     return filePath;
   }
-  queryTailNode(path5, name) {
-    let parentPath = path5.parentPath;
+  queryTailNode(path6, name) {
+    let parentPath = path6.parentPath;
     if (!import_types8.default.isMemberExpression(parentPath.node)) {
       return;
     }
     if (parentPath.node.property && parentPath.node.property.name === name) {
       return parentPath;
     }
-    let node = this.queryTailNode(path5.parentPath, name);
+    let node = this.queryTailNode(path6.parentPath, name);
     return node;
   }
   async analysisAst() {
     const _this = this;
     let methodsNode;
     let gettersNode;
-    import_traverse4.default.default(this.astNode, {
-      ObjectProperty(path5) {
-        const properties = path5.node.value.properties;
-        const nodeName = path5.node.key.name;
+    import_traverse5.default.default(this.astNode, {
+      ObjectProperty(path6) {
+        const properties = path6.node.value.properties;
+        const nodeName = path6.node.key.name;
         switch (nodeName) {
           case "computed" /* Computed */:
-            gettersNode = path5;
+            gettersNode = path6;
             _this.analysisComputed(properties);
             break;
           case "methods" /* Methods */:
-            methodsNode = path5;
+            methodsNode = path6;
             _this.analysisMethods(properties);
             break;
           default:
             break;
         }
       },
-      CallExpression(path5) {
-        if (path5.node.callee.property) {
-          let fnName = path5.node.callee.property.name;
+      CallExpression(path6) {
+        if (path6.node.callee.property) {
+          let fnName = path6.node.callee.property.name;
           if (["commit", "dispatch"].includes(fnName)) {
-            _this.analysisCallExpression(path5);
+            _this.analysisCallExpression(path6);
           }
         }
       },
-      Identifier(path5) {
-        let property = path5.parent.property;
-        let parentPath = path5.parentPath;
-        if (path5.node.name === "$store") {
-          property = path5.parentPath.parentPath.node.property;
-          parentPath = path5.parentPath.parentPath;
+      Identifier(path6) {
+        let property = path6.parent.property;
+        let parentPath = path6.parentPath;
+        if (path6.node.name === "$store") {
+          property = path6.parentPath.parentPath.node.property;
+          parentPath = path6.parentPath.parentPath;
         }
-        if (["store", "$store"].includes(path5.node.name) && property && property.name === "state") {
+        if (["store", "$store"].includes(path6.node.name) && property && property.name === "state") {
           let filePath = [];
           _this.loopJoiningPath(parentPath, filePath);
           let fileUrl = _this.checkPath(filePath);
@@ -17224,7 +17439,7 @@ var VuexRender = class {
 
 // src/vue-babel/template-nuxt/index.ts
 var import_types9 = __toESM(require_lib3(), 1);
-var import_traverse5 = __toESM(require("@babel/traverse"), 1);
+var import_traverse6 = __toESM(require("@babel/traverse"), 1);
 var NuxtRender = class {
   constructor(_ast, _options, _importRender) {
     this.options = {};
@@ -17257,10 +17472,10 @@ var NuxtRender = class {
   updateAsyncData(objectMethod) {
     const file = import_types9.default.file(import_types9.default.program([import_types9.default.exportDefaultDeclaration(import_types9.default.objectExpression([objectMethod]))]));
     const _this = this;
-    import_traverse5.default.default(file, {
-      ObjectPattern(path5) {
-        if (path5.parent.key && path5.parent.key.name === "asyncData") {
-          path5.node.properties.forEach((element) => {
+    import_traverse6.default.default(file, {
+      ObjectPattern(path6) {
+        if (path6.parent.key && path6.parent.key.name === "asyncData") {
+          path6.node.properties.forEach((element) => {
             if (!element.key) {
               return;
             }
@@ -17323,9 +17538,9 @@ var NuxtRender = class {
 };
 
 // src/vue-babel/template-script/index.ts
-var { parse: parse3 } = import_parser3.default;
+var { parse: parse4 } = import_parser4.default;
 var scriptRender = async (code, options2, filePath) => {
-  let newAst = parse3("", {
+  let newAst = parse4("", {
     sourceType: "module"
   });
   let dataRender;
@@ -17336,19 +17551,20 @@ var scriptRender = async (code, options2, filePath) => {
   let mixinRender;
   let vuexRender;
   let nuxtRender;
+  let componentsRender = new ComponentsRender();
   let importRender = ImportRender_default(newAst, options2);
   let lifeCycleRender = new LifeCycleAnalysis(options2, newAst, importRender);
   let ruleGlobal = ["$route", "$router", "$axios", "$el"];
-  const loopProperty = (path5) => {
-    if (!path5.node.property) {
-      return path5.node.type;
+  const loopProperty = (path6) => {
+    if (!path6.node.property) {
+      return path6.node.type;
     }
-    return loopProperty(path5.context.parentPath);
+    return loopProperty(path6.context.parentPath);
   };
   const createSetupState = () => {
     return import_types10.default.identifier(options2.dataName);
   };
-  const replaceNodeName = (property, name, newNode, path5) => {
+  const replaceNodeName = (property, name, newNode, path6) => {
     mixinRender && mixinRender.mixinAdvance(name);
     const computedReplace = () => {
       newNode.object = newNode.property;
@@ -17433,7 +17649,7 @@ var scriptRender = async (code, options2, filePath) => {
     }
     return newNode;
   };
-  let ast = parse3(code, {
+  let ast = parse4(code, {
     sourceType: "module"
   });
   const isExportIdentifier = () => {
@@ -17449,10 +17665,10 @@ var scriptRender = async (code, options2, filePath) => {
         }
       }
     }
-    import_traverse6.default.default(ast, {
-      Identifier(path5) {
-        if (path5.node.name === keyName && import_types10.default.isObjectExpression(path5.parent.init)) {
-          exportObj = path5.parent.init;
+    import_traverse7.default.default(ast, {
+      Identifier(path6) {
+        if (path6.node.name === keyName && import_types10.default.isObjectExpression(path6.parent.init)) {
+          exportObj = path6.parent.init;
         }
       }
     });
@@ -17479,15 +17695,15 @@ var scriptRender = async (code, options2, filePath) => {
   isExportIdentifier();
   vuexRender = new VuexRender(ast, options2);
   await vuexRender.analysisAst();
-  import_traverse6.default.default(ast, {
-    ImportDeclaration(path5) {
-      importRender.addImportGlobal(path5.node);
+  import_traverse7.default.default(ast, {
+    ImportDeclaration(path6) {
+      importRender.addImportGlobal(path6.node);
     },
-    ObjectProperty(path5) {
-      const properties = path5.node.value.properties;
-      const nodeName = path5.node.key.name;
+    ObjectProperty(path6) {
+      const properties = path6.node.value.properties;
+      const nodeName = path6.node.key.name;
       if ("mixins" /* Mixins */ === nodeName) {
-        const elements = path5.node.value.elements.map((item) => item.name);
+        const elements = path6.node.value.elements.map((item) => item.name);
         mixinRender = new MixinRender(elements, importRender.importGlobal, options2, newAst, filePath);
       }
     }
@@ -17495,18 +17711,18 @@ var scriptRender = async (code, options2, filePath) => {
   mixinRender && await mixinRender.initMixin();
   nuxtRender = new NuxtRender(ast, options2, importRender);
   importRender.collectGlobalVariable(ast);
-  import_traverse6.default.default(ast, {
-    ObjectMethod(path5) {
-      const nodeName = path5.node.key.name;
+  import_traverse7.default.default(ast, {
+    ObjectMethod(path6) {
+      const nodeName = path6.node.key.name;
       if (nodeName === "data" /* Data */) {
-        dataRender = new DataRender(path5.node.body.body, options2, newAst);
+        dataRender = new DataRender(path6.node.body.body, options2, newAst);
       } else if (LifeCycleAnalysis.isCycle(nodeName)) {
-        lifeCycleRender.init(path5.node);
+        lifeCycleRender.init(path6.node);
       }
     },
-    ObjectProperty(path5) {
-      const properties = path5.node.value.properties;
-      const nodeName = path5.node.key.name;
+    ObjectProperty(path6) {
+      const properties = path6.node.value.properties;
+      const nodeName = path6.node.key.name;
       switch (nodeName) {
         case "computed" /* Computed */:
           computedRender = new ComputedRender(properties, options2, newAst);
@@ -17516,39 +17732,45 @@ var scriptRender = async (code, options2, filePath) => {
           methodsRender = new MethodsRender(properties, options2, newAst);
           break;
         case "props" /* Props */:
-          propsRender = new PropsRender(path5.node.value, options2, newAst, ast);
+          propsRender = new PropsRender(path6.node.value, options2, newAst, ast);
           break;
         case "watch" /* Watch */:
-          watchRender = new WatchRender(path5.node.value, { dataRender, vuexRender, computedRender, propsRender, mixinRender }, options2, newAst);
+          watchRender = new WatchRender(path6.node.value, { dataRender, vuexRender, computedRender, propsRender, mixinRender }, options2, newAst);
           break;
+        case "components" /* Components */:
+          componentsRender.init(path6.node.value, importRender, filePath);
         default:
           break;
       }
     },
-    MemberExpression(path5) {
-      if (path5.node.object.type === "ThisExpression" || path5.node.object.name === "_this") {
-        const property = path5.node.property;
+    MemberExpression(path6) {
+      if (path6.node.object.type === "ThisExpression" || path6.node.object.name === "_this") {
+        const property = path6.node.property;
         const name = property.name;
-        let newNode = path5.node;
-        newNode = replaceNodeName(property, name, newNode, path5);
+        let newNode = path6.node;
+        newNode = replaceNodeName(property, name, newNode, path6);
         if (name && name.indexOf("$") > -1) {
           if (name === "$refs") {
             importRender.addVueApi("ref");
-            if (!import_types10.default.isMemberExpression(path5.parent))
+            componentsRender.addExampleRef(path6);
+            if (!import_types10.default.isMemberExpression(path6.parent))
               return;
-            if (path5.parent.computed) {
-              path5.parent.object = import_types10.default.memberExpression(createCallExpression(import_types10.default.identifier("getCurrentInstance"), []), import_types10.default.identifier("refs"));
+            if (path6.parent.computed) {
+              path6.parent.object = import_types10.default.memberExpression(createCallExpression(import_types10.default.identifier("getCurrentInstance"), []), import_types10.default.identifier("refs"));
               importRender.addVueApi("getCurrentInstance");
             } else {
-              if (import_types10.default.isStringLiteral(path5.parent.property)) {
-                path5.parent.object = import_types10.default.identifier(replaceCross(path5.parent.property.value));
+              if (import_types10.default.isStringLiteral(path6.parent.property)) {
+                path6.parent.object = import_types10.default.identifier(replaceCross(path6.parent.property.value));
               } else {
-                path5.parent.object = path5.parent.property;
+                path6.parent.object = path6.parent.property;
               }
-              path5.parent.object.name = getRefName(path5.parent.object.name);
-              path5.parent.property = import_types10.default.identifier("value");
+              path6.parent.object.name = getRefName(path6.parent.object.name);
+              path6.parent.property = import_types10.default.identifier("value");
             }
-            importRender.addRefKey(path5.parent.object.name);
+            if (mixinRender && mixinRender.refMap.has(path6.parent.object.name)) {
+              return;
+            }
+            importRender.addRefKey(path6.parent.object.name);
             return;
           }
           if (name === "$router" || name === "$route") {
@@ -17561,8 +17783,8 @@ var scriptRender = async (code, options2, filePath) => {
             newNode.name = name2.replace("$", "");
             importRender.addVueApi(value);
             importRender.addHookMap(name2, value);
-            if (import_types10.default.isMemberExpression(path5.parent) && path5.parent.property.name === "default") {
-              path5.parentPath.replaceWith(newNode);
+            if (import_types10.default.isMemberExpression(path6.parent) && path6.parent.property.name === "default") {
+              path6.parentPath.replaceWith(newNode);
             }
             return;
           }
@@ -17570,7 +17792,7 @@ var scriptRender = async (code, options2, filePath) => {
             importRender.addVueApi("ref");
             let el = import_types10.default.memberExpression(import_types10.default.identifier("el_ref"), import_types10.default.identifier("value"));
             importRender.addHookMap(getCompoentEl(), "ref");
-            path5.replaceWith(el);
+            path6.replaceWith(el);
             return;
           }
           if (name === "$axios") {
@@ -17578,29 +17800,29 @@ var scriptRender = async (code, options2, filePath) => {
           }
           if (importRender.isVueApi(name)) {
             newNode.name = importRender.conversionApi(name);
-            importRender.addApiKey(newNode.name, path5);
+            importRender.addApiKey(newNode.name, path6);
           } else if (!ruleGlobal.includes(name)) {
             importRender.addGlobal(name);
           }
         }
-        path5.replaceWith(newNode);
+        path6.replaceWith(newNode);
       }
     },
-    VariableDeclarator(path5) {
-      const node = path5.node;
+    VariableDeclarator(path6) {
+      const node = path6.node;
       if (import_types10.default.isThisExpression(node.init)) {
         node.init = createSetupState();
       }
     },
-    CallExpression(path5) {
-      path5.node.arguments.forEach((arg, key) => {
+    CallExpression(path6) {
+      path6.node.arguments.forEach((arg, key) => {
         if (import_types10.default.isThisExpression(arg)) {
-          delete path5.node.arguments[0];
+          delete path6.node.arguments[0];
         }
       });
     }
   });
-  const render3 = async () => {
+  const initialization = () => {
     [
       importRender,
       mixinRender,
@@ -17613,6 +17835,11 @@ var scriptRender = async (code, options2, filePath) => {
     ].forEach((item) => {
       item && item.render();
     });
+    return {
+      newAst
+    };
+  };
+  const render3 = async () => {
     let newCode = await import_generator3.default.default(newAst).code;
     return {
       newCode,
@@ -17620,7 +17847,9 @@ var scriptRender = async (code, options2, filePath) => {
     };
   };
   return {
+    initialization,
     render: render3,
+    newAst,
     importRender,
     vuexRender,
     dataRender,
@@ -17629,41 +17858,42 @@ var scriptRender = async (code, options2, filePath) => {
     lifeCycleRender,
     propsRender,
     watchRender,
-    mixinRender
+    mixinRender,
+    componentsRender
   };
 };
 
 // src/vue-babel/template-html/index.ts
-var import_traverse7 = __toESM(require("@babel/traverse"), 1);
-var import_parser4 = __toESM(require("@babel/parser"), 1);
+var import_traverse8 = __toESM(require("@babel/traverse"), 1);
+var import_parser5 = __toESM(require("@babel/parser"), 1);
 var import_generator4 = __toESM(require("@babel/generator"), 1);
 var import_types11 = __toESM(require_lib3(), 1);
 var import_dom_serializer = require("dom-serializer");
 var import_htmlparser2 = require("htmlparser2");
-var { parse: parse4 } = import_parser4.default;
+var { parse: parse5 } = import_parser5.default;
 var adapterVariable = "let interpolation = ";
 var templateRender = async (dom, scriptData, filePath, options2) => {
   const RenderCallbacks = [];
-  const { dataRender, mixinRender, vuexRender, importRender } = scriptData;
-  const addPrefixIdentifier = (path5, replaceData) => {
+  const { dataRender, mixinRender, vuexRender, importRender, componentsRender } = scriptData;
+  const addPrefixIdentifier = (path6, replaceData) => {
     const { prefix, value } = replaceData;
     if (prefix) {
-      const identifierNode = path5.node;
+      const identifierNode = path6.node;
       if (!import_types11.default.isIdentifier(identifierNode))
         return;
       let node = import_types11.default.memberExpression(import_types11.default.identifier(prefix), identifierNode);
       try {
-        if (import_types11.default.isObjectProperty(path5.parent)) {
-          path5.parent.value = node;
+        if (import_types11.default.isObjectProperty(path6.parent)) {
+          path6.parent.value = node;
         } else {
-          path5.replaceWith(node);
+          path6.replaceWith(node);
         }
       } catch (error) {
-        console.log(filePath, path5.node.name);
+        console.log(filePath, path6.node.name);
       }
     } else {
       let node = import_types11.default.identifier(value);
-      path5.replaceWith(node);
+      path6.replaceWith(node);
     }
   };
   const removeAdapterVal = (code) => {
@@ -17673,8 +17903,8 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     }
     return newCode;
   };
-  const dealWithRoute = (path5) => {
-    let node = path5.node;
+  const dealWithRoute = (path6) => {
+    let node = path6.node;
     if (node.name === "$route" || node.name === "$router") {
       node.name = node.name.replace("$", "");
       importRender.addRouter(node.name);
@@ -17686,21 +17916,21 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     let pattern = /\{\{([\s\S]+?)\}\}/g;
     let strItem;
     while (strItem = pattern.exec(str)) {
-      let ast = parse4(strItem[1]);
+      let ast = parse5(strItem[1]);
       let data = {
         oldValue: strItem[1]
       };
-      import_traverse7.default.default(ast, {
-        Identifier(path5) {
-          if (!path5.parent.property || path5.key === "object" || path5.key === "property" && path5.parent.computed) {
-            dealWithRoute(path5);
-            let name = path5.node.name;
+      import_traverse8.default.default(ast, {
+        Identifier(path6) {
+          if (!path6.parent.property || path6.key === "object" || path6.key === "property" && path6.parent.computed) {
+            dealWithRoute(path6);
+            let name = path6.node.name;
             mixinRender && mixinRender.mixinAdvance(name);
             if (mixinRender && mixinRender.reactiveMap.has(name)) {
               interpolationList.push({
                 ...data,
                 ast,
-                path: path5,
+                path: path6,
                 replaceData: { value: "", prefix: mixinRender.reactiveMap.get(name).name }
               });
             }
@@ -17708,7 +17938,7 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
               interpolationList.push({
                 ...data,
                 ast,
-                path: path5,
+                path: path6,
                 replaceData: { value: "", prefix: dataRender.options.dataName }
               });
             }
@@ -17716,7 +17946,7 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
               interpolationList.push({
                 ...data,
                 ast,
-                path: path5,
+                path: path6,
                 replaceData: vuexRender.stateHookMap.get(name)
               });
             }
@@ -17749,29 +17979,29 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     if (code.charAt(0) === "{" && code.charAt(code.length - 1) === "}") {
       code = `${adapterVariable}${code}`;
     }
-    ast = parse4(code);
+    ast = parse5(code);
     const nodeIdentifier = [];
-    import_traverse7.default.default(ast, {
-      Identifier(path5) {
-        if (!path5.parent.property || path5.key === "object" || path5.key === "property" && path5.parent.computed) {
-          dealWithRoute(path5);
-          let name = path5.node.name;
+    import_traverse8.default.default(ast, {
+      Identifier(path6) {
+        if (!path6.parent.property || path6.key === "object" || path6.key === "property" && path6.parent.computed) {
+          dealWithRoute(path6);
+          let name = path6.node.name;
           mixinRender && mixinRender.mixinAdvance(name);
           if (dataRender && dataRender.hasReactiveKey(name)) {
             nodeIdentifier.push({
-              path: path5,
+              path: path6,
               replaceData: { value: "", prefix: dataRender.options.dataName }
             });
           }
           if (mixinRender && mixinRender.reactiveMap.has(name)) {
             nodeIdentifier.push({
-              path: path5,
+              path: path6,
               replaceData: { value: "", prefix: mixinRender.reactiveMap.get(name).name }
             });
           }
           if (vuexRender && vuexRender.stateHookMap.has(name)) {
             nodeIdentifier.push({
-              path: path5,
+              path: path6,
               replaceData: vuexRender.stateHookMap.get(name)
             });
           }
@@ -17980,12 +18210,29 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
       });
     }
   };
+  const componentsRefVal = (elem) => {
+    var _a2;
+    let componentsName = underlineToHump(elem.name);
+    const refName = (_a2 = elem.attribs) == null ? void 0 : _a2.ref;
+    let refval = componentsRender.exampleRef.get(refName);
+    if (componentsName && componentsRender.components.has(componentsName) && refName && refval) {
+      let value = componentsRender.components.get(componentsName);
+      if (value.defineExpose) {
+        refval.forEach((val) => {
+          value.defineExpose.add(val);
+        });
+      } else {
+        value.defineExpose = new Set(refval);
+      }
+    }
+  };
   if (scriptData && dom) {
     setRootEl(dom);
     import_htmlparser2.DomUtils.filter((elem) => {
       updateKey(elem);
       addForKey(elem);
       attribsUpdate(elem);
+      componentsRefVal(elem);
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs);
       replaceInterpolation(elem);
@@ -18055,11 +18302,11 @@ var vueRender = async (html, options2, filePath) => {
   let templateMap = /* @__PURE__ */ new Map();
   let scriptMap = /* @__PURE__ */ new Map();
   const handler = new import_htmlparser22.DomHandler();
-  const parser5 = new import_htmlparser22.Parser(handler, {
+  const parser6 = new import_htmlparser22.Parser(handler, {
     xmlMode: true
   });
-  parser5.write(htmlData.newHtml);
-  parser5.done();
+  parser6.write(htmlData.newHtml);
+  parser6.done();
   const dom = handler.dom;
   import_htmlparser22.DomUtils.findOne((elem) => {
     if (!scriptMap.has("script") && elem.name === "script" && !elem.attribs["type"]) {
@@ -18084,14 +18331,20 @@ var vueRender = async (html, options2, filePath) => {
   if (scriptNode) {
     scriptData = await scriptRender(scriptNode, options2, filePath);
     await templateRender(templateNode, scriptData, filePath, options2);
-    const { newCode } = await scriptData.render();
-    scriptMap.get("script").data = "\n" + newCode + "\n";
+    scriptData.initialization();
   }
-  const contentHtml = (0, import_dom_serializer2.render)(handler.dom, {
-    encodeEntities: "utf8"
-  });
+  const renderVueTemplate = async () => {
+    if (scriptData) {
+      const { newCode } = await scriptData.render();
+      scriptMap.get("script").data = "\n" + newCode + "\n";
+    }
+    const contentHtml = (0, import_dom_serializer2.render)(handler.dom, {
+      encodeEntities: "utf8"
+    });
+    return contentHtml;
+  };
   return {
-    contentHtml,
+    renderVueTemplate,
     scriptData
   };
 };
@@ -18100,75 +18353,9 @@ var vue_babel_default = {
   vueRender
 };
 
-// src/config.ts
-var import_path3 = __toESM(require("path"), 1);
-var import_fs_extra3 = __toESM(require("fs-extra"), 1);
-var labelAttribs = {
-  "van-action-sheet": {
-    "v-model": "v-model:show"
-  },
-  "van-dialog": {
-    "v-model": "v-model:show"
-  },
-  "van-share-sheet": {
-    "v-model": "v-model:show"
-  },
-  "van-circle": {
-    "v-model": "v-model:current-rate"
-  },
-  "van-list": {
-    "v-model": "v-model:loading"
-  },
-  "van-popover": {
-    "v-model": "v-model:show"
-  },
-  "van-tabs": {
-    "v-model": "v-model:active"
-  },
-  "van-tree-select": {
-    ":active-id.sync": "v-model:active-id",
-    ":main-active-index.sync": "v-model:main-active-index",
-    ":active-id": "v-model:active-id",
-    ":main-active-index": "v-model:main-active-index"
-  }
-};
-var rootPath = process.cwd();
-var configUrl = import_path3.default.join(rootPath, "magic.config.json");
-var status = import_fs_extra3.default.existsSync(configUrl);
-var options = {
-  dataName: "stateData",
-  rootPath,
-  alias: {
-    "~": rootPath,
-    "@": rootPath
-  },
-  piniaStore: {
-    aliasPrefix: "~/store",
-    pathVal: import_path3.default.join(rootPath, "./store")
-  },
-  output: import_path3.default.join(rootPath, "../newVue/"),
-  entranceDir: rootPath,
-  compileDir: ["components", "pages", "layouts"],
-  scssTurn: false,
-  labelAttribs
-};
-var _a, _b, _c, _d;
-if (status) {
-  let config = JSON.parse(import_fs_extra3.default.readFileSync(configUrl));
-  config.output && (options.output = import_path3.default.join(rootPath, config.output));
-  config.compileDir && (options.compileDir = config.compileDir);
-  config.dataName && (options.dataName = config.dataName);
-  if (config.piniaStore) {
-    ((_a = config.piniaStore) == null ? void 0 : _a.aliasPrefix) && (options.piniaStore.aliasPrefix = (_b = config.piniaStore) == null ? void 0 : _b.aliasPrefix);
-    ((_c = config.piniaStore) == null ? void 0 : _c.pathVal) && (options.piniaStore.pathVal = import_path3.default.join(rootPath, (_d = config.piniaStore) == null ? void 0 : _d.pathVal));
-    config.scssTurn && (options.scssTurn = config.scssTurn);
-    (config == null ? void 0 : config.alias) && (options.alias = { ...options.alias, ...config == null ? void 0 : config.alias });
-    config.labelAttribs && (options.labelAttribs = { ...options.labelAttribs, ...config.labelAttribs });
-  }
-}
-
 // src/index.ts
 var import_progress_bar = __toESM(require("@jyeontu/progress-bar"), 1);
+var import_traverse9 = __toESM(require("@babel/traverse"), 1);
 var { scriptRender: scriptRender2, vueRender: vueRender2 } = vue_babel_default;
 var isVue = (fileName) => {
   return /\.vue$/.test(fileName);
@@ -18176,8 +18363,9 @@ var isVue = (fileName) => {
 var fileMap = /* @__PURE__ */ new Map();
 var piniaMap = /* @__PURE__ */ new Map();
 var mixinMap = /* @__PURE__ */ new Map();
+var exposeMap = /* @__PURE__ */ new Map();
 var getAllDirByFilename = (dir, compileDir) => {
-  let dirPath = import_path4.default.resolve(__dirname, dir);
+  let dirPath = import_path5.default.resolve(__dirname, dir);
   let files = import_fs2.default.readdirSync(dirPath);
   let resultArr = [];
   files.forEach((file) => {
@@ -18216,22 +18404,120 @@ var collectMixins = (mixinRender) => {
     mixinMap.set(filePath, { mixinCode: item.newCode });
   });
 };
+var collectDefineExpose = (scriptData) => {
+  let componentsRender = scriptData == null ? void 0 : scriptData.componentsRender;
+  if (!componentsRender || !componentsRender.components)
+    return;
+  for (const iterator of componentsRender.components) {
+    let key = iterator[0];
+    let value = iterator[1];
+    if (exposeMap.has(value.src)) {
+      let exposeItem = exposeMap.get(value.src);
+      if (value.defineExpose && value.defineExpose.size > 0) {
+        value.defineExpose.forEach((v) => exposeItem.defineExpose.add(v));
+      }
+    } else {
+      if (value.defineExpose && value.defineExpose.size > 0) {
+        exposeMap.set(value.src, {
+          parent: scriptData,
+          defineExpose: new Set(value.defineExpose)
+        });
+      }
+    }
+  }
+};
+var defineExposeFilterType = (scriptData, exposeItem) => {
+  const { mixinRender, computedRender, dataRender } = scriptData;
+  let exposeType = /* @__PURE__ */ new Map();
+  exposeItem.forEach((item) => {
+    if (mixinRender && mixinRender.reactiveMap.has(item)) {
+      let data = mixinRender.reactiveMap.get(item);
+      exposeType.set(item, { name: data.name, isMixinReactive: 1 });
+    } else if (mixinRender && mixinRender.computeMap.has(item)) {
+      exposeType.set(item, { name: item, isComputed: 1 });
+    } else if (dataRender && (dataRender == null ? void 0 : dataRender.hasReactiveKey(item))) {
+      exposeType.set(item, { name: dataRender.options.dataName, isReactive: 1 });
+    } else if (computedRender && (computedRender == null ? void 0 : computedRender.hasComputedKey(item))) {
+      exposeType.set(item, { name: item, isComputed: 1 });
+    } else {
+      exposeType.set(item, { name: item, isMethods: 1 });
+    }
+  });
+  return exposeType;
+};
+var updateParentTemplate = (parent, exposeType) => {
+  const { newAst, componentsRender } = parent;
+  try {
+    import_traverse9.default.default(newAst, {
+      Identifier(path6) {
+        const name = path6.node.name;
+        if (componentsRender && name && name.indexOf("_ref") > -1) {
+          const node = path6.parentPath.parentPath.node;
+          if (node && node.property) {
+            const exposeItem = exposeType.get(node.property.name);
+            if (exposeItem) {
+              if (exposeItem.isComputed) {
+                let object = import_types12.default.memberExpression(import_types12.default.cloneNode(node.object), import_types12.default.cloneNode(node.property));
+                node.object = object;
+                node.property.name = "value";
+              }
+              if (exposeItem.isReactive) {
+                let object = import_types12.default.memberExpression(import_types12.default.cloneNode(node.object.object), import_types12.default.cloneNode(node.object.property));
+                node.object.object = object;
+                node.object.property.name = exposeItem.name;
+              }
+              if (exposeItem.isMixinReactive) {
+                let object = import_types12.default.memberExpression(import_types12.default.cloneNode(node.object.object), import_types12.default.cloneNode(node.object.property));
+                node.object.object = object;
+                node.object.property.name = exposeItem.name;
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.log("-----updateParentTemplate", error);
+  }
+};
+var createDefineExpose = () => {
+  for (let key of exposeMap.keys()) {
+    let filePath = key.replace(options.entranceDir.replaceAll("\\", "/"), options.output.replaceAll("\\", "/"));
+    if (fileMap.has(filePath)) {
+      const scriptData = fileMap.get(filePath).scriptData;
+      const { newAst } = scriptData;
+      ;
+      let exposeItem = exposeMap.get(key);
+      const { defineExpose, parent } = exposeItem;
+      let exposeType = defineExposeFilterType(scriptData, defineExpose);
+      updateParentTemplate(parent, exposeType);
+      let exportArr = [];
+      exposeType.forEach((value, key2) => {
+        exportArr.push(value.name);
+      });
+      newAst.program.body.push(createCallExpression(import_types12.default.identifier("defineExpose"), [createObjectExpression(exportArr)]));
+    }
+  }
+};
 var createPinia = () => {
   piniaMap.forEach(async (item, key) => {
     let piniaCode = await item.piniaNode.renderPinia();
-    import_fs_extra4.default.outputFileSync(key, piniaCode);
+    import_fs_extra6.default.outputFileSync(key, piniaCode);
   });
 };
 var createMixins = () => {
   mixinMap.forEach((item, key) => {
-    import_fs_extra4.default.outputFileSync(key, item.mixinCode);
+    import_fs_extra6.default.outputFileSync(key, item.mixinCode);
   });
 };
 var createFile = () => {
-  fileMap.forEach((item, key) => {
-    let filePath = key.replace(options.entranceDir, options.output);
-    import_fs_extra4.default.outputFileSync(filePath, item.contentHtml);
-  });
+  let callBack = async (v) => {
+    const key = v[0];
+    const item = v[1];
+    let contentHtml = await item.renderVueTemplate();
+    import_fs_extra6.default.outputFileSync(key, contentHtml);
+  };
+  return Promise.all(Array.from(fileMap).map(callBack));
 };
 var getProgressBar = (duration) => {
   const config = {
@@ -18246,7 +18532,6 @@ var getProgressBar = (duration) => {
     },
     color: "green"
   };
-  var timer, i = 0;
   return new import_progress_bar.default(config);
 };
 var init = async () => {
@@ -18254,18 +18539,25 @@ var init = async () => {
   const progressBar = getProgressBar(fileArr.length);
   let index = 0;
   let callback = async (filePath) => {
-    var _a2, _b2, _c2;
+    var _a2;
     const code = await (0, import_promises.readFile)(filePath, { encoding: "utf-8" });
-    const fileData = await vueRender2(code, options, filePath);
-    fileMap.set(filePath, fileData);
-    collectPinia((_b2 = (_a2 = fileData == null ? void 0 : fileData.scriptData) == null ? void 0 : _a2.vuexRender) == null ? void 0 : _b2.piniaRender);
-    collectMixins((_c2 = fileData == null ? void 0 : fileData.scriptData) == null ? void 0 : _c2.mixinRender);
+    const { renderVueTemplate, scriptData } = await vueRender2(code, options, filePath);
+    let fileSrc = filePath.replace(options.entranceDir, options.output);
+    fileSrc = fileSrc.replaceAll("\\", "/");
+    fileMap.set(fileSrc, {
+      renderVueTemplate,
+      scriptData
+    });
+    collectDefineExpose(scriptData);
+    collectPinia((_a2 = scriptData == null ? void 0 : scriptData.vuexRender) == null ? void 0 : _a2.piniaRender);
+    collectMixins(scriptData == null ? void 0 : scriptData.mixinRender);
     progressBar.run(index++);
   };
-  Promise.all(fileArr.map(callback)).then((res) => {
-    createFile();
-    createPinia();
-    createMixins();
+  Promise.all(fileArr.map(callback)).then(async (res) => {
+    createDefineExpose();
+    await createFile(progressBar);
+    createPinia(progressBar);
+    createMixins(progressBar);
   });
 };
 var src_default = init;

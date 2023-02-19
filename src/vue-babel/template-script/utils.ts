@@ -1,7 +1,9 @@
 import path from 'path';
-import fs from 'fs';
+import fse from 'fs-extra';
+import os from 'os';
 import t, { Identifier } from '@babel/types';
 import traverse from "@babel/traverse";
+import { options } from '../../config';
 export const modifyCycleName = (str: string, prefix = '',) => {
   return prefix+str.charAt(0).toUpperCase()+str.substring(1)
 }
@@ -10,9 +12,40 @@ export const addSuffix = (str: string, suffix: string) => {
   return str + suffix
 }
 
+export const checkSysPath = () =>{
+  const os = require('os');
+  if (os.type() == 'Windows_NT') {
+    return '\\'
+  }
+  return '/'
+}
+
+export const adaptationFolder = (value:string)=>{
+  if(!value) return value;
+  let arr = value.split('.');
+  let suffix = '.'+arr[arr.length]
+  if(options.fileExtension.includes(suffix)){
+    return value
+  }
+  return (fse.existsSync(value) ? value+'/index' : value).replaceAll('\\','/');
+}
+
+
+ export const humpToUnderline = (str: string): string => {
+  return str.replace(/([A-Z])/g, '-$1').toLowerCase()
+ }
+
+
+ export const underlineToHump = (str:string) => {
+  if (!str) return ''
+  return str.replace(/-(\w)/g, (_, letter: string) => {
+    return letter.toUpperCase()
+   })
+ }
+
 export const getAllDirByFilename = (dir:string,filename: string)=>{
   let dirPath = path.resolve(__dirname, dir);
-  let files = fs.readdirSync(dirPath)
+  let files = fse.readdirSync(dirPath)
   let resultArr: string[] = [];
 
   files.forEach(file => {
@@ -20,7 +53,7 @@ export const getAllDirByFilename = (dir:string,filename: string)=>{
     if (file === filename) {
       return resultArr.push(filePath);
     }
-    if (fs.statSync(filePath).isDirectory()) {
+    if (fse.statSync(filePath).isDirectory()) {
       resultArr.push(...getAllDirByFilename(filePath,filename));
     }
   })
@@ -186,7 +219,8 @@ export enum OptionsApi {
   Methods = 'methods',
   Props = 'props',
   Watch = 'watch',
-  Mixins = 'mixins'
+  Mixins = 'mixins',
+  Components = 'components'
 }
 
 export type piniaModuleItem = {
@@ -207,3 +241,5 @@ export enum Vmodel {
   EMIT_NAME = 'update:modelValue',
   NAME = 'modelValue'
 }
+
+export type GetRenderType<T> = T extends (...args:any)=> infer Y ? Y :string;

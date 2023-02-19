@@ -1,13 +1,13 @@
 {
   "name": "magic-turn",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "main": "index.js",
   "type": "module",
   "keywords": ["vue2", "vue3"],
   "scripts": {
-    "dev": "tsup ./src/index.ts --format cjs,esm --dts --clean --watch",
-    "build": "tsup ./src/index.ts --format cjs,esm --dts --clean --minify"
+    "dev": "tsup ./src/index.ts --format cjs,esm  --clean --watch",
+    "build": "tsup ./src/index.ts --format cjs,esm  --clean --minify"
   },
   "bin":{
     "magicTurn":"./index.js"

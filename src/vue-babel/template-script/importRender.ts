@@ -8,12 +8,17 @@ const vueApi = {
 
 type vueApiType = keyof typeof vueApi;
 
+
+
 const defaultVueApi = ['reactive']
+
 
 const ImportRender = (newAst:t.File,options:any) => {
   return  {
 
     importGlobal: [],
+
+    importDeclarationMap:new Map<string,string>(),
     
     vueApiImports: new Set<string>(defaultVueApi),
 
@@ -28,7 +33,7 @@ const ImportRender = (newAst:t.File,options:any) => {
     emitKey: new Set<string>(),
   
     refKey: new Set<string>(),
-  
+
     isVueApi(name: string) {
       return Object.keys(vueApi).includes(name)
     },
@@ -63,6 +68,11 @@ const ImportRender = (newAst:t.File,options:any) => {
       if(options.scssTurn && node.source && node.source.value){
         node.source.value = node.source.value.replace('.styl','.scss')
       }
+      let value = node.source.value;
+      node.specifiers.map((exportObj:t.ImportSpecifier)=>{
+        const name = exportObj.local.name;
+        this.importDeclarationMap.set(name,value)
+      });
       this.importGlobal.push(node)
     },
   
@@ -161,6 +171,7 @@ const ImportRender = (newAst:t.File,options:any) => {
       if (this.refKey.size > 0) {
         this.refKey.forEach(refName => {
           if(!refName) return
+    
           let refNode = createFnVariable(refName,'ref',[t.nullLiteral()]);
           newAst.program.body.push(refNode)
         })

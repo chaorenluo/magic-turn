@@ -67,8 +67,8 @@ export default class MixinRender{
    async addMixinCode (filesList: Array<any>, nodeList: Array<any>){
     const callback = async (item:any, key:any) => {
       const nodeItem = nodeList[key];
-      const { methodsRender, computedRender, dataRender, vuexRender,render,importRender } = nodeItem
-      let { newAst } = await render();
+      const { methodsRender, computedRender, dataRender, vuexRender,initialization,importRender } = nodeItem
+      let { newAst } = await initialization();
 
       const methodsKey = methodsRender ? Array.from(methodsRender.methodsKey) : [];
       const computedKey = computedRender ? Array.from(computedRender.computedKey) : [];
@@ -131,7 +131,7 @@ export default class MixinRender{
     }
     let scriptCallback = async (codeItem: any) => {
       let mixinOptions = { ...this.options, dataName: `${this.options.dataName}_${codeItem.name}` }
-      const scriptCode = await scriptRender(codeItem.fileCode, mixinOptions);
+      const scriptCode = await scriptRender(codeItem.fileCode, mixinOptions,this.filePath);
       return {...scriptCode,filePath:codeItem.filePath}
     }
     this.codeList = await Promise.all(this.filesList.map(fileCallback));

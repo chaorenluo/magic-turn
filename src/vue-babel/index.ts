@@ -5,7 +5,6 @@ import { Parser,DomHandler, DomUtils, } from "htmlparser2";
 
 
 import {render} from 'dom-serializer';
-import { options } from '../config';
 
 
 const decomposeTemp = (html:string) =>{
@@ -90,16 +89,23 @@ const vueRender = async (html: any, options: any, filePath: string) => {
 
   if (scriptNode) {
     scriptData = await scriptRender(scriptNode, options,filePath);
-    await templateRender(templateNode, scriptData,filePath,options)
-    const { newCode } = await scriptData.render()
-    scriptMap.get('script').data = '\n'+newCode+'\n';
+    await templateRender(templateNode, scriptData,filePath,options);
+    scriptData.initialization();
   }
-  const contentHtml = render(handler.dom, {
-    encodeEntities:'utf8',
-  });
+
+  const renderVueTemplate = async() =>{
+    if(scriptData){
+      const { newCode } = await scriptData.render()
+      scriptMap.get('script').data = '\n'+newCode+'\n';
+    }
+    const contentHtml = render(handler.dom, {
+      encodeEntities:'utf8',
+    });
+    return contentHtml
+  }
 
   return {
-    contentHtml,
+    renderVueTemplate,
     scriptData
   }
 }

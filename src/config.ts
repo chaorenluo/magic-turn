@@ -3,20 +3,23 @@ import fse from 'fs-extra'
 
 
 type Config = {
+  rootPath:string,
+  entranceDir:string,
   dataName?:string,
-  piniaStore?:{
+  piniaStore:{
     aliasPrefix?:string,
     pathVal?:string
   },
   output?:string,
   compileDir?:Array<string>,
   scssTurn?:boolean,
-  alias?:{
+  alias:{
     [key: string]: string;
   },
   labelAttribs?:{
-    [key in string]:string
+    [key in string]:any
   },
+  fileExtension:Array<string>
 }
 
 const labelAttribs  = {
@@ -53,7 +56,7 @@ const labelAttribs  = {
 let rootPath = process.cwd()
 let configUrl = path.join(rootPath,'magic.config.json');
 let status = fse.existsSync(configUrl)
-const options = {
+const options:Config = {
   dataName: 'stateData',
   rootPath,
   alias: {
@@ -68,7 +71,8 @@ const options = {
   entranceDir:rootPath,
   compileDir:['components','pages','layouts'],
   scssTurn:false,
-  labelAttribs
+  labelAttribs,
+  fileExtension:['.vue','.js','.ts']
 }
 
 if(status){
@@ -87,4 +91,6 @@ if(status){
 
 export {options};
 
+
+export const downList = () =>{}
 

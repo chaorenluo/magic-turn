@@ -12,6 +12,7 @@ import PropsRender from './PropsRender'
 import ImportRender from './ImportRender'
 import WatchRender from './WatchRender'
 import MixinRender from './MixinRender'
+import ComponentsRender from './ComponentsRender'
 import VuexRender from './VuexRender'
 import NuxtRender from "../template-nuxt";
 import { OptionsApi,getCompoentEl,getRefName,replaceCross, createCallExpression,Vmodel} from './utils'
@@ -32,7 +33,8 @@ const scriptRender = async (code: string, options,filePath) => {
   let watchRender: WatchRender;
   let mixinRender: MixinRender;
   let vuexRender: VuexRender;
-  let nuxtRender:NuxtRender
+  let nuxtRender:NuxtRender;
+  let componentsRender:ComponentsRender = new ComponentsRender()
   let importRender = ImportRender(newAst,options);
   let lifeCycleRender: LifeCycleRender = new LifeCycleRender(options, newAst,importRender)
   let ruleGlobal = ['$route','$router','$axios','$el']
@@ -211,6 +213,8 @@ const scriptRender = async (code: string, options,filePath) => {
   // 收集全局变量
   importRender.collectGlobalVariable(ast)
 
+  
+
   traverse.default(ast, {
     ObjectMethod(path) {
       const nodeName = path.node.key.name;
@@ -237,6 +241,8 @@ const scriptRender = async (code: string, options,filePath) => {
         case OptionsApi.Watch:
           watchRender = new WatchRender(path.node.value, {dataRender, vuexRender,computedRender,propsRender,mixinRender},options, newAst)
           break;
+        case OptionsApi.Components:
+          componentsRender.init(path.node.value,importRender,filePath)
         default:
           break;
       }
@@ -252,6 +258,7 @@ const scriptRender = async (code: string, options,filePath) => {
           // 处理refs语句
           if (name === '$refs') {
             importRender.addVueApi('ref');
+            componentsRender.addExampleRef(path)
             if(!t.isMemberExpression(path.parent)) return
             if(path.parent.computed){
               path.parent.object =t.memberExpression(createCallExpression(t.identifier('getCurrentInstance'),[]),t.identifier('refs'))
@@ -265,6 +272,10 @@ const scriptRender = async (code: string, options,filePath) => {
     
               path.parent.object.name = getRefName(path.parent.object.name);
               path.parent.property = t.identifier('value')
+            }
+            // mixin里面存在的ref就不用创建了
+            if(mixinRender && mixinRender.refMap.has(path.parent.object.name)){
+              return
             }
             importRender.addRefKey(path.parent.object.name) 
             return
@@ -322,11 +333,17 @@ const scriptRender = async (code: string, options,filePath) => {
   });
 
 
-  const render = async() => {
-    [importRender, mixinRender, propsRender, dataRender, computedRender, methodsRender, watchRender, lifeCycleRender
+  const initialization = () => {
+     [importRender, mixinRender, propsRender, dataRender, computedRender, methodsRender, watchRender, lifeCycleRender
     ].forEach(item => {
-      item && item.render()
+      item &&  item.render()
     })
+    return {
+      newAst
+    }
+  }
+
+  const render = async() =>{
     let newCode =  await generate.default(newAst).code;
     return {
       newCode,
@@ -335,7 +352,9 @@ const scriptRender = async (code: string, options,filePath) => {
   }
 
   return {
+    initialization,
     render,
+    newAst,
     importRender,
     vuexRender,
     dataRender,
@@ -344,7 +363,8 @@ const scriptRender = async (code: string, options,filePath) => {
     lifeCycleRender,
     propsRender,
     watchRender,
-    mixinRender
+    mixinRender,
+    componentsRender
   }
 }
 

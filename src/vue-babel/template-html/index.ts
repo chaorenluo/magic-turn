@@ -5,9 +5,7 @@ import t from '@babel/types';
 import { render } from 'dom-serializer';
 import { DomUtils, parseDocument, ElementType } from "htmlparser2";
 
-import { getRefName, getCompoentEl,replaceCross } from '../template-script/utils'
-
-
+import { getRefName, getCompoentEl,replaceCross,underlineToHump } from '../template-script/utils'
 
 const { parse } = parser;
 let adapterVariable = 'let interpolation = '
@@ -16,7 +14,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
 
   const RenderCallbacks: Array<Function> = [];
 
-  const { dataRender, mixinRender, vuexRender, importRender } = scriptData;
+  const { dataRender, mixinRender, vuexRender, importRender,componentsRender } = scriptData;
 
   const addPrefixIdentifier = (path: any, replaceData: { prefix: string, value: string }) => {
     const { prefix, value } = replaceData;
@@ -370,12 +368,29 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     }
   }
 
+  const componentsRefVal = (elem:any)=>{
+    let componentsName = underlineToHump(elem.name);
+    const refName = elem.attribs?.ref;
+    let refval = componentsRender.exampleRef.get(refName)
+    if(componentsName && componentsRender.components.has(componentsName) && refName && refval){
+      let value = componentsRender.components.get(componentsName);
+      if(value.defineExpose){
+        refval.forEach(val => {
+          value.defineExpose.add(val);
+        });
+      }else{
+        value.defineExpose = new Set(refval)
+      }
+    }
+  }
+
   if (scriptData && dom) {
     setRootEl(dom)
     DomUtils.filter((elem: any) => {
       updateKey(elem)
       addForKey(elem)
       attribsUpdate(elem)
+      componentsRefVal(elem)
       const attribs = elem.attribs;
       attribs && dealWithAttribs(attribs)
       replaceInterpolation(elem)
