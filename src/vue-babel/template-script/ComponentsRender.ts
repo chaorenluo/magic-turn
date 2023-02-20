@@ -24,11 +24,11 @@ export default class ComponentsRender {
     init(objectExpression:t.ObjectExpression,importRenders:GetRenderType<typeof ImportRender>,_filePath:string){
         objectExpression.properties.map(item=>{
            let key =  item.value.name
-           let value =    importRenders.importDeclarationMap.get((key as unknown) as string);  
+           let value = importRenders.importDeclarationMap.get((key as unknown) as string);  
            if(key && value){
             // 能在模板里找到导入组件的情况下，我们要检查导入的是否是vue文件如果不是则要向上寻找最终导出的vue文件地址
             let data =  this.searchComponentsFile(value,key,_filePath)
-            if(data){
+             if (data) {
                 this.components.set(key,{
                     src:data.src
                 })
@@ -53,7 +53,7 @@ export default class ComponentsRender {
            src = path.resolve(arr.slice(0,arr.length-1).join('/'),value)
         }
         if(prefix){
-            src = path.join(prefix,valArr.slice(1,valArr.length).join('/'));
+          src = path.join(prefix, valArr.slice(1, valArr.length).join('/'));
         }
         if(fileSuffix.includes('vue')){
          return{
@@ -67,7 +67,7 @@ export default class ComponentsRender {
          suffixType = suffix[key]
          let newSrc = src+suffixType
          if(fse.existsSync(newSrc)){
-             isFile = true;
+           isFile = true;
              break;
          }else{
           

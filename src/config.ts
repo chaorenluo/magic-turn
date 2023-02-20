@@ -52,6 +52,15 @@ const labelAttribs  = {
   }
 }
 
+const updateAlias = (value: any) => {
+  Object.keys(value).forEach(key => {
+    let src = value[key];
+    if (src.indexOf('./') > -1 || src.indexOf('../') > -1) {
+      value[key] =  path.join(rootPath,value[key]) 
+    }
+  })
+  return value
+ }
 
 let rootPath = process.cwd()
 let configUrl = path.join(rootPath,'magic.config.json');
@@ -84,7 +93,7 @@ if(status){
   config.piniaStore?.aliasPrefix && (options.piniaStore.aliasPrefix =  config.piniaStore?.aliasPrefix );
   config.piniaStore?.pathVal && (options.piniaStore.pathVal = path.join(rootPath, config.piniaStore?.pathVal));
   config.scssTurn && (options.scssTurn = config.scssTurn);
-  config?.alias && (options.alias = {...options.alias,...config?.alias})
+  config?.alias && (options.alias = {...options.alias,...updateAlias(config?.alias)})
   config.labelAttribs && (options.labelAttribs = {...options.labelAttribs,...config.labelAttribs})
  }
 } 

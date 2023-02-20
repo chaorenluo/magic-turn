@@ -2,7 +2,7 @@
 代码转换器 可以用于把nuxt2的代码转换为nuxt3的兼容代码。
 
 ### 安装
-npm i magicTurn --save-dev
+npm i magic-turn --save-dev
 
 ### 运行
 magicTurn
