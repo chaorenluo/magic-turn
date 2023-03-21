@@ -34,10 +34,12 @@ export default class MixinRender{
         if (this.mixinList.includes(name)) {
           const sourceVal = item.source.value;
           const file = this.getFilePath(sourceVal)
-          let status = fse.existsSync(file)
-          if (status) {
+          const indexFile = this.getFilePath(sourceVal + '/index')
+          let fileStatus = fse.existsSync(file);
+          let indexFileStatus = fse.existsSync(indexFile);
+          if (fileStatus || indexFileStatus) {
             this.filesList.push({
-              path: file,
+              path: fileStatus ? file : indexFile,
               name
             }) 
           } else {
@@ -88,7 +90,7 @@ export default class MixinRender{
       }
       // 存储mixin的方法变量
       if (methodsKey && methodsKey.length > 0) {
-        methodsKey.forEach(key =>this.methodsMap.set(key,{name:methodsRender.options.dataName,mixinName}))
+        methodsKey.forEach(key =>this.methodsMap.set(key,{ame:methodsRender ? methodsRender.options.dataName :this.options.dataName .dataName,mixinName}))
       }
       //存储mixin中ref变量
       if (refKeys && refKeys.length > 0) {
@@ -97,7 +99,7 @@ export default class MixinRender{
       // vuex中的方法变量
       if (vuexRender && vuexRender.mutationsExportNode) {
         vuexRender.mutationsExportNode.forEach((item) => {
-          this.methodsMap.set(item.name,{name:methodsRender.options.dataName,mixinName})
+          this.methodsMap.set(item.name,{name:methodsRender ? methodsRender.options.dataName :this.options.dataName ,mixinName})
         })
       }
       let importDeclaration:Array<t.ImportDeclaration> = []

@@ -61,7 +61,9 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     let pattern = /\{\{([\s\S]+?)\}\}/g;
     let strItem;
     while (strItem = pattern.exec(str)) {
-      let ast = parse(strItem[1])
+      let ast = parse(strItem[1],{
+        plugins:['jsx']
+      })
       let data = {
         oldValue: strItem[1],
       }
@@ -114,7 +116,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
   }
 
   const replaceAttribsVal = (attribs: any, key: string) => {
-    let code = attribs[key];
+    let code = attribs[key].trim();
     if (!code) return
     if (code.indexOf('$slots') > -1) {
       importRender.addVueApi('useSlots');
@@ -125,7 +127,9 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     if (code.charAt(0) === '{' && code.charAt(code.length - 1) === '}') {
       code = `${adapterVariable}${code}`
     }
-    ast = parse(code)
+    ast = parse(code, {
+      plugins:["jsx"]
+    })
     const nodeIdentifier: Array<any> = [];
     traverse.default(ast, {
       Identifier(path: any) {
@@ -352,8 +356,8 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
   const dealWithAttribs = async (attribs: any) => {
     Object.keys(attribs).map(key => {
       updateRefName(attribs, key)
-      let firstChar = key.charAt(0);
-      if (key.indexOf('v-') > -1 || firstChar === ':' || firstChar === '@') replaceAttribsVal(attribs, key);
+        let firstChar = key.charAt(0);
+        if (key.indexOf('v-') > -1 || firstChar === ':' || firstChar === '@') replaceAttribsVal(attribs, key);
     })
   }
 

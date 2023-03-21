@@ -23,7 +23,8 @@ const { parse } = parser;
 
 const scriptRender = async (code: string, options,filePath) => {
   let newAst = parse('', {
-    sourceType: 'module'
+    sourceType: 'module',
+    plugins:['jsx']
   })
 
   let dataRender: DataRender;
@@ -140,7 +141,8 @@ const scriptRender = async (code: string, options,filePath) => {
   }
 
   let ast = parse(code, {
-    sourceType: 'module'
+    sourceType: 'module',
+    plugins:["jsx"]
   })
 
   const isExportIdentifier =  () =>{

@@ -91,7 +91,8 @@ export default class WatchRender {
         watchName = prefix
       }
       return parse(watchName, {
-        sourceType: 'module'
+        sourceType: 'module',
+        plugins:["jsx"]
       }).program.body[0]?.expression
     } catch (error) {
       console.error('addPrefix----',key)

@@ -152,6 +152,7 @@ export default class PinnaNode {
   createAst() {
     const ast = parse(this.fileCode, {
       sourceType: "module",
+      plugins:['jsx']
     });
     this.filterExport(ast);
     let _this = this;
@@ -302,6 +303,7 @@ export default class PinnaNode {
     `;
     const ast = parse(piniaTemplate, {
       sourceType: "module",
+      plugins:["jsx"]
     });
 
     this.additional(ast.program);

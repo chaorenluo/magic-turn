@@ -16359,7 +16359,8 @@ var WatchRender = class {
         watchName = prefix;
       }
       return (_a2 = parse(watchName, {
-        sourceType: "module"
+        sourceType: "module",
+        plugins: ["jsx"]
       }).program.body[0]) == null ? void 0 : _a2.expression;
     } catch (error) {
       console.error("addPrefix----", key);
@@ -16492,10 +16493,12 @@ var MixinRender = class {
         if (this.mixinList.includes(name)) {
           const sourceVal = item.source.value;
           const file = this.getFilePath(sourceVal);
-          let status2 = import_fs_extra3.default.existsSync(file);
-          if (status2) {
+          const indexFile = this.getFilePath(sourceVal + "/index");
+          let fileStatus = import_fs_extra3.default.existsSync(file);
+          let indexFileStatus = import_fs_extra3.default.existsSync(indexFile);
+          if (fileStatus || indexFileStatus) {
             this.filesList.push({
-              path: file,
+              path: fileStatus ? file : indexFile,
               name
             });
           } else {
@@ -16540,14 +16543,14 @@ var MixinRender = class {
         computedKey.forEach((key2) => this.computeMap.set(key2, { name: computedRender.options.dataName, mixinName }));
       }
       if (methodsKey && methodsKey.length > 0) {
-        methodsKey.forEach((key2) => this.methodsMap.set(key2, { name: methodsRender.options.dataName, mixinName }));
+        methodsKey.forEach((key2) => this.methodsMap.set(key2, { ame: methodsRender ? methodsRender.options.dataName : this.options.dataName.dataName, mixinName }));
       }
       if (refKeys && refKeys.length > 0) {
         refKeys.forEach((key2) => this.refMap.set(key2, { name: key2, mixinName }));
       }
       if (vuexRender && vuexRender.mutationsExportNode) {
         vuexRender.mutationsExportNode.forEach((item2) => {
-          this.methodsMap.set(item2.name, { name: methodsRender.options.dataName, mixinName });
+          this.methodsMap.set(item2.name, { name: methodsRender ? methodsRender.options.dataName : this.options.dataName, mixinName });
         });
       }
       let importDeclaration = [];
@@ -16642,6 +16645,8 @@ var ComponentsRender = class {
     this.exampleRef = /* @__PURE__ */ new Map();
   }
   init(objectExpression, importRenders, _filePath) {
+    if (!objectExpression.properties)
+      return;
     objectExpression.properties.map((item) => {
       let key = item.value.name;
       let value = importRenders.importDeclarationMap.get(key);
@@ -16657,6 +16662,8 @@ var ComponentsRender = class {
   }
   searchComponentsFile(value, key, filePath) {
     filePath = filePath.replaceAll("\\", "/");
+    if (!value)
+      return;
     value = value.replaceAll("\\", "/");
     let valArr = value.split("/");
     let prefix = options.alias[valArr[0]];
@@ -16700,7 +16707,8 @@ var ComponentsRender = class {
   loopLookPath(filePath, key) {
     let fileContent = import_fs_extra4.default.readFileSync(filePath, "utf8");
     let ast = parse2(fileContent, {
-      sourceType: "module"
+      sourceType: "module",
+      plugins: ["jsx"]
     });
     let importDeclarationMap = /* @__PURE__ */ new Map();
     let data = null;
@@ -16737,6 +16745,8 @@ var ComponentsRender = class {
     return data;
   }
   addExampleRef(path6) {
+    if (!path6.parentPath.node.property)
+      return;
     let refName = path6.parentPath.node.property.name;
     let property = path6.parentPath.parentPath.node.property;
     if (property) {
@@ -16878,7 +16888,8 @@ var PinnaNode = class {
   }
   createAst() {
     const ast = parse3(this.fileCode, {
-      sourceType: "module"
+      sourceType: "module",
+      plugins: ["jsx"]
     });
     this.filterExport(ast);
     let _this = this;
@@ -17011,7 +17022,8 @@ var PinnaNode = class {
     })
     `;
     const ast = parse3(piniaTemplate, {
-      sourceType: "module"
+      sourceType: "module",
+      plugins: ["jsx"]
     });
     this.additional(ast.program);
     this.addImportHooks(ast.program);
@@ -17120,6 +17132,12 @@ var VuexRender = class {
       replaceIdentifier(methBody, "state", getPiniaVariable(storeName));
       fnBody = import_types8.default.blockStatement(Array.isArray(statement) ? statement : [statement]);
     }
+    if (import_types8.default.isStringLiteral(methBody)) {
+      let name = getPiniaVariable(storeName);
+      let memberExpression = createMemberExpression([name, methBody.value].reverse());
+      let returnStatement = import_types8.default.returnStatement(memberExpression);
+      fnBody = import_types8.default.blockStatement([returnStatement]);
+    }
     let objectMethod = import_types8.default.objectMethod("method", import_types8.default.identifier(methName), [], fnBody);
     this.computedModules.add(objectMethod);
   }
@@ -17170,6 +17188,8 @@ var VuexRender = class {
       firstItem.properties.forEach((v) => {
         let keyName = v.key.name;
         let value = v.value.value;
+        if (!value)
+          return;
         let valueArr = value.split("/");
         let status2 = this.isFile(getStoreUrl(valueArr));
         let aliasKey = this.matchingName(valueArr);
@@ -17569,7 +17589,8 @@ var NuxtRender = class {
 var { parse: parse4 } = import_parser4.default;
 var scriptRender = async (code, options2, filePath) => {
   let newAst = parse4("", {
-    sourceType: "module"
+    sourceType: "module",
+    plugins: ["jsx"]
   });
   let dataRender;
   let computedRender;
@@ -17678,7 +17699,8 @@ var scriptRender = async (code, options2, filePath) => {
     return newNode;
   };
   let ast = parse4(code, {
-    sourceType: "module"
+    sourceType: "module",
+    plugins: ["jsx"]
   });
   const isExportIdentifier = () => {
     let body = ast.program.body;
@@ -17944,7 +17966,9 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     let pattern = /\{\{([\s\S]+?)\}\}/g;
     let strItem;
     while (strItem = pattern.exec(str)) {
-      let ast = parse5(strItem[1]);
+      let ast = parse5(strItem[1], {
+        plugins: ["jsx"]
+      });
       let data = {
         oldValue: strItem[1]
       };
@@ -17995,7 +18019,7 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     });
   };
   const replaceAttribsVal = (attribs, key) => {
-    let code = attribs[key];
+    let code = attribs[key].trim();
     if (!code)
       return;
     if (code.indexOf("$slots") > -1) {
@@ -18007,7 +18031,9 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     if (code.charAt(0) === "{" && code.charAt(code.length - 1) === "}") {
       code = `${adapterVariable}${code}`;
     }
-    ast = parse5(code);
+    ast = parse5(code, {
+      plugins: ["jsx"]
+    });
     const nodeIdentifier = [];
     import_traverse8.default.default(ast, {
       Identifier(path6) {
@@ -18511,7 +18537,6 @@ var updateParentTemplate = (parent, exposeType) => {
 var createDefineExpose = () => {
   for (let key of exposeMap.keys()) {
     let filePath = key.replace(options.entranceDir.replaceAll("\\", "/"), options.output.replaceAll("\\", "/"));
-    console.log(key);
     if (fileMap.has(filePath)) {
       const scriptData = fileMap.get(filePath).scriptData;
       const { newAst } = scriptData;
@@ -18554,7 +18579,7 @@ var getProgressBar = (duration) => {
     current: 0,
     showNumber: true,
     tip: {
-      0: "\u5F00\u59CB\u8F6C\u636211",
+      0: "\u5F00\u59CB\u8F6C\u6362",
       50: "\u8F6C\u6362\u4E00\u534A\u5566\uFF0C\u4E0D\u8981\u7740\u6025\u2026\u2026",
       75: "\u9A6C\u4E0A\u5C31\u8F6C\u6362\u5B8C\u4E86\u2026\u2026",
       100: "\u8F6C\u6362\u5B8C\u6210\uFF0C\u6587\u4EF6\u5DF2\u751F\u6210"

@@ -21,7 +21,8 @@ export default class ComponentsRender {
     components:Map<string,ExampleValue> = new Map()
     exampleRef:Map<string,Set<string>> = new Map()
 
-    init(objectExpression:t.ObjectExpression,importRenders:GetRenderType<typeof ImportRender>,_filePath:string){
+  init(objectExpression: t.ObjectExpression, importRenders: GetRenderType<typeof ImportRender>, _filePath: string) {
+      if(!objectExpression.properties)return
         objectExpression.properties.map(item=>{
            let key =  item.value.name
            let value = importRenders.importDeclarationMap.get((key as unknown) as string);  
@@ -40,7 +41,8 @@ export default class ComponentsRender {
     }
 
     searchComponentsFile(value:string,key:string,filePath:string){
-        filePath = filePath.replaceAll('\\','/');
+      filePath = filePath.replaceAll('\\', '/');
+      if(!value) return
         value = value.replaceAll('\\','/');
         let valArr = value.split('/');
         let prefix = options.alias[valArr[0]]
@@ -89,7 +91,8 @@ export default class ComponentsRender {
     loopLookPath(filePath:string,key:string){
        let fileContent = fse.readFileSync(filePath, 'utf8');
        let ast = parse(fileContent, {
-        sourceType: 'module'
+         sourceType: 'module',
+         plugins:['jsx']
       })
       let importDeclarationMap = new Map();
       let data = null;
@@ -127,7 +130,8 @@ export default class ComponentsRender {
       return data
     }
 
-    addExampleRef(path:any){
+  addExampleRef(path: any) {
+    if (!path.parentPath.node.property) return;
         let refName = path.parentPath.node.property.name;
         let property = path.parentPath.parentPath.node.property
         if(property){

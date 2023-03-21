@@ -50,10 +50,18 @@ export default class VuexRender {
       }else{
         statement = t.returnStatement(methBody.body)
       }
+
       replaceIdentifier(methBody,'state',getPiniaVariable(storeName))
       fnBody = t.blockStatement(Array.isArray(statement) ? statement : [statement])
     }
+    if(t.isStringLiteral(methBody)){
 
+      // fnBody = t.blockStatement([returnStatement])
+      let name =  getPiniaVariable(storeName)
+      let memberExpression = createMemberExpression([name,methBody.value].reverse())
+      let returnStatement = t.returnStatement(memberExpression)
+      fnBody = t.blockStatement([returnStatement])
+    }
     let objectMethod = t.objectMethod('method', t.identifier(methName), [], fnBody)
     this.computedModules.add(objectMethod)
   }
@@ -106,6 +114,7 @@ export default class VuexRender {
       firstItem.properties.forEach(v=>{
         let keyName = v.key.name;
         let value = v.value.value as string;
+        if(!value) return
         let valueArr = value.split('/');
         let status = this.isFile(getStoreUrl(valueArr));
         let aliasKey = this.matchingName(valueArr);
@@ -239,6 +248,7 @@ export default class VuexRender {
   analysisMethods(properties: Array<any>) {
     this.propertiesForEach(properties, (argument,calleeName) => {
       if (calleeName === VuexFn.mapMutations || calleeName === VuexFn.mapActions) { 
+
         this.dealWithVuex(argument.arguments,2)
       }
     })

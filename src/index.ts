@@ -212,7 +212,6 @@ const init = async () => {
     fileMap.set(fileSrc, {
       renderVueTemplate, scriptData
     })
-
     collectDefineExpose(scriptData)
     collectPinia(scriptData?.vuexRender?.piniaRender)
     collectMixins(scriptData?.mixinRender)

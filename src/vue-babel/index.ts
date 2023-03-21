@@ -86,13 +86,11 @@ const vueRender = async (html: any, options: any, filePath: string) => {
   let scriptNode = htmlData.script;
   let templateNode = templateMap.get("template");
   let scriptData;
-
   if (scriptNode) {
-    scriptData = await scriptRender(scriptNode, options,filePath);
-    await templateRender(templateNode, scriptData,filePath,options);
+    scriptData = await scriptRender(scriptNode, options,filePath)
+    await templateRender(templateNode, scriptData,filePath,options)
     scriptData.initialization();
   }
-
   const renderVueTemplate = async() =>{
     if(scriptData){
       const { newCode } = await scriptData.render()
