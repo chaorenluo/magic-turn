@@ -3,36 +3,35 @@ import { readFile } from 'fs/promises'
 import path from 'path'
 import fs from 'fs'
 import fse from 'fs-extra'
-import t from '@babel/types';
+import t from '@babel/types'
 import babelRender from './vue-babel'
-import { options } from './config';
+import { options } from './config'
 import ProgressBar from '@jyeontu/progress-bar'
-import traverse from "@babel/traverse";
-import { createCallExpression, createMemberExpression, createObjectExpression } from './vue-babel/template-script/utils'
+import traverse from '@babel/traverse'
+import { createCallExpression, createObjectExpression } from './vue-babel/template-script/utils'
 
-const { scriptRender, vueRender } = babelRender;
+const { vueRender } = babelRender
 
 const isVue = (fileName: string) => {
   return /\.vue$/.test(fileName)
 }
 
-
-let fileMap = new Map();
-let piniaMap = new Map();
-let mixinMap = new Map();
-const exposeMap = new Map();
+const fileMap = new Map()
+const piniaMap = new Map()
+const mixinMap = new Map()
+const exposeMap = new Map()
 
 const getAllDirByFilename = (dir: string, compileDir: Array<string>) => {
-  let dirPath = path.resolve(__dirname, dir);
-  let files = fs.readdirSync(dirPath)
-  let resultArr: string[] = [];
+  const dirPath = path.resolve(__dirname, dir)
+  const files = fs.readdirSync(dirPath)
+  const resultArr: string[] = []
 
   files.forEach(file => {
     if (!compileDir || compileDir.includes(file)) {
-      let filePath = dir + '/' + file;
-      resultArr.push(filePath);
+      const filePath = dir + '/' + file
+      resultArr.push(filePath)
       if (fs.statSync(filePath).isDirectory()) {
-        resultArr.push(...getAllDirByFilename(filePath));
+        resultArr.push(...getAllDirByFilename(filePath))
       }
     }
   })
@@ -40,7 +39,7 @@ const getAllDirByFilename = (dir: string, compileDir: Array<string>) => {
 }
 
 const compatiblePath = (str) => {
-  if (!str || typeof str != 'string') return str;
+  if (!str || typeof str !== 'string') return str
   return str.replaceAll('\\', '/')
 }
 
@@ -48,28 +47,28 @@ const collectPinia = (piniaRender) => {
   if (!piniaRender || !piniaRender.piniaNodeList) return
   piniaRender.piniaNodeList.forEach((item) => {
     if (piniaMap.has(item.filePath)) return
-    let filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
+    const filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
     piniaMap.set(filePath, { piniaNode: item })
   })
 }
 
-let collectMixins = (mixinRender) => {
+const collectMixins = (mixinRender) => {
   if (!mixinRender) return
   mixinRender.nodeList.forEach((item) => {
     if (mixinMap.has(item.filePath)) return
-    let filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
+    const filePath = compatiblePath(item.filePath).replace(compatiblePath(options.entranceDir), options.output)
     mixinMap.set(filePath, { mixinCode: item.newCode })
   })
 }
 
 const collectDefineExpose = (scriptData) => {
-  let componentsRender = scriptData?.componentsRender;
+  const componentsRender = scriptData?.componentsRender
   if (!componentsRender || !componentsRender.components) return
   for (const iterator of componentsRender.components) {
-    let key = iterator[0]
-    let value = iterator[1]
+    const key = iterator[0]
+    const value = iterator[1]
     if (exposeMap.has(value.src)) {
-      let exposeItem = exposeMap.get(value.src);
+      const exposeItem = exposeMap.get(value.src)
       if (value.defineExpose && value.defineExpose.size > 0) {
         value.defineExpose.forEach(v => exposeItem.defineExpose.add(v))
       }
@@ -85,11 +84,11 @@ const collectDefineExpose = (scriptData) => {
 }
 
 const defineExposeFilterType = (scriptData, exposeItem) => {
-  const { mixinRender, computedRender, dataRender } = scriptData;
-  let exposeType = new Map();
+  const { mixinRender, computedRender, dataRender } = scriptData
+  const exposeType = new Map()
   exposeItem.forEach(item => {
     if (mixinRender && mixinRender.reactiveMap.has(item)) {
-      let data = mixinRender.reactiveMap.get(item)
+      const data = mixinRender.reactiveMap.get(item)
       exposeType.set(item, { name: data.name, isMixinReactive: 1 })
     } else if (mixinRender && mixinRender.computeMap.has(item)) {
       exposeType.set(item, { name: item, isComputed: 1 })
@@ -105,29 +104,29 @@ const defineExposeFilterType = (scriptData, exposeItem) => {
 }
 
 const updateParentTemplate = (parent, exposeType) => {
-  const { newAst, componentsRender } = parent;
+  const { newAst, componentsRender } = parent
   try {
     traverse.default(newAst, {
-      Identifier(path) {
-        const name = path.node.name;
-        if (componentsRender && name && name.indexOf("_ref") > -1) {
-          const node = path.parentPath.parentPath.node;
+      Identifier (path) {
+        const name = path.node.name
+        if (componentsRender && name && name.indexOf('_ref') > -1) {
+          const node = path.parentPath.parentPath.node
           if (node && node.property) {
-            const exposeItem = exposeType.get(node.property.name);
+            const exposeItem = exposeType.get(node.property.name)
             if (exposeItem) {
-              if(exposeItem.isComputed){
-                let object = t.memberExpression( t.cloneNode(node.object), t.cloneNode(node.property));
-                node.object = object;
-                node.property.name = 'value';
+              if (exposeItem.isComputed) {
+                const object = t.memberExpression(t.cloneNode(node.object), t.cloneNode(node.property))
+                node.object = object
+                node.property.name = 'value'
               }
-              if(exposeItem.isReactive){
-                let object = t.memberExpression( t.cloneNode(node.object.object), t.cloneNode(node.object.property));
-                node.object.object = object;
+              if (exposeItem.isReactive) {
+                const object = t.memberExpression(t.cloneNode(node.object.object), t.cloneNode(node.object.property))
+                node.object.object = object
                 node.object.property.name = exposeItem.name
               }
-              if(exposeItem.isMixinReactive){
-                let object = t.memberExpression( t.cloneNode(node.object.object), t.cloneNode(node.object.property));
-                node.object.object = object;
+              if (exposeItem.isMixinReactive) {
+                const object = t.memberExpression(t.cloneNode(node.object.object), t.cloneNode(node.object.property))
+                node.object.object = object
                 node.object.property.name = exposeItem.name
               }
             }
@@ -136,21 +135,21 @@ const updateParentTemplate = (parent, exposeType) => {
       }
     })
   } catch (error) {
-    console.log("-----updateParentTemplate", error)
+    console.log('-----updateParentTemplate', error)
   }
 }
 
 const createDefineExpose = () => {
-  for (let key of exposeMap.keys()) {
-    let filePath = key.replace(options.entranceDir.replaceAll('\\', '/'), options.output.replaceAll('\\', '/'))
+  for (const key of exposeMap.keys()) {
+    const filePath = key.replace(options.entranceDir.replaceAll('\\', '/'), options.output.replaceAll('\\', '/'))
     if (fileMap.has(filePath)) {
-      const scriptData = fileMap.get(filePath).scriptData;
-      const { newAst } = scriptData;;
-      let exposeItem = exposeMap.get(key)
-      const { defineExpose, parent } = exposeItem;
-      let exposeType = defineExposeFilterType(scriptData, defineExpose)
+      const scriptData = fileMap.get(filePath).scriptData
+      const { newAst } = scriptData
+      const exposeItem = exposeMap.get(key)
+      const { defineExpose, parent } = exposeItem
+      const exposeType = defineExposeFilterType(scriptData, defineExpose)
       updateParentTemplate(parent, exposeType)
-      let exportArr = [];
+      const exportArr = []
       exposeType.forEach((value, key) => {
         exportArr.push(value.name)
       })
@@ -161,7 +160,7 @@ const createDefineExpose = () => {
 
 const createPinia = () => {
   piniaMap.forEach(async (item, key) => {
-    let piniaCode = await item.piniaNode.renderPinia()
+    const piniaCode = await item.piniaNode.renderPinia()
     fse.outputFileSync(key, piniaCode)
   })
 }
@@ -173,11 +172,11 @@ const createMixins = () => {
 }
 
 const createFile = () => {
-  let callBack = async (v) => {
+  const callBack = async (v) => {
     const key = v[0]
     const item = v[1]
-    let contentHtml = await item.renderVueTemplate();
-    fse.outputFileSync(key, contentHtml);
+    const contentHtml = await item.renderVueTemplate()
+    fse.outputFileSync(key, contentHtml)
   }
   return Promise.all(Array.from(fileMap).map(callBack))
 }
@@ -195,17 +194,15 @@ const getProgressBar = (duration) => {
     },
     color: 'green'
   }
-  return new ProgressBar(config);
-
+  return new ProgressBar(config)
 }
 
-
 const init = async () => {
-  let fileArr = getAllDirByFilename(options.rootPath, options.compileDir).filter(item => isVue(item))
+  const fileArr = getAllDirByFilename(options.rootPath, options.compileDir).filter(item => isVue(item))
   const progressBar = getProgressBar(fileArr.length)
-  let index = 0;
-  let callback = async (filePath: string) => {
-    const code = await readFile(filePath, { encoding: 'utf-8' });
+  let index = 0
+  const callback = async (filePath: string) => {
+    const code = await readFile(filePath, { encoding: 'utf-8' })
     const { renderVueTemplate, scriptData } = await vueRender(code, options, filePath)
     let fileSrc = filePath.replace(options.entranceDir, options.output)
     fileSrc = fileSrc.replaceAll('\\', '/')
@@ -215,7 +212,7 @@ const init = async () => {
     collectDefineExpose(scriptData)
     collectPinia(scriptData?.vuexRender?.piniaRender)
     collectMixins(scriptData?.mixinRender)
-    progressBar.run(index++);
+    progressBar.run(index++)
   }
   Promise.all(fileArr.map(callback)).then(async (res) => {
     createDefineExpose()

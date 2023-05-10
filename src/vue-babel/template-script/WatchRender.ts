@@ -1,16 +1,16 @@
-import parser from "@babel/parser";
-import { createRunFunction, arrowFunctionExpression, OptionsApi } from './utils';
-import t from '@babel/types';
+import parser from '@babel/parser'
+import { createRunFunction, arrowFunctionExpression, OptionsApi } from './utils'
+import t from '@babel/types'
 import DataRender from './DataRender'
 import VuexRender from './VuexRender'
 import ComputedRender from './ComputedRender'
 import PropsRender from './PropsRender'
 import MixinRender from './MixinRender'
-
-const { parse } = parser;
+import { Config } from '../../config'
+const { parse } = parser
 
 type DataContent = {
-  dataRender: DataRender, vuexRender:VuexRender,computedRender:ComputedRender, propsRender:PropsRender,mixinRender:MixinRender
+  dataRender: DataRender, vuexRender:VuexRender, computedRender:ComputedRender, propsRender:PropsRender, mixinRender:MixinRender
 }
 export default class WatchRender {
   watchNode: any;
@@ -18,28 +18,28 @@ export default class WatchRender {
   objectProperty: Array<any> = [];
   watchKey: Set<string> = new Set();
   dataRender: DataRender;
-  options: any;
+  options: Config;
   newAst: t.File;
   vuexRender: VuexRender;
   computedRender: ComputedRender;
   propsRender: PropsRender;
   mixinRender:MixinRender
 
-  constructor(watchNode: any, dataContent:DataContent, options: any, _newAst: t.File) {
-    const { dataRender, vuexRender,computedRender,propsRender,mixinRender} = dataContent;
-    this.watchNode = watchNode;
-    this.dataRender = dataRender;
-    this.options = options;
-    this.newAst = _newAst;
-    this.vuexRender = vuexRender;
-    this.computedRender = computedRender;
-    this.propsRender = propsRender;
-    this.mixinRender = mixinRender;
+  constructor (watchNode: any, dataContent:DataContent, options: Config, _newAst: t.File) {
+    const { dataRender, vuexRender, computedRender, propsRender, mixinRender } = dataContent
+    this.watchNode = watchNode
+    this.dataRender = dataRender
+    this.options = options
+    this.newAst = _newAst
+    this.vuexRender = vuexRender
+    this.computedRender = computedRender
+    this.propsRender = propsRender
+    this.mixinRender = mixinRender
     this.init()
   }
 
-  init() {
-    this.watchNode.properties.forEach((node) => {
+  init () {
+    this.watchNode.properties.forEach((node: { type: string }) => {
       if (node.type === 'ObjectMethod') {
         this.objectWatch.push(node)
       }
@@ -49,14 +49,14 @@ export default class WatchRender {
     })
   }
 
-  hasWatchKey(key: string) {
-    return this.watchKey.has(key);
+  hasWatchKey (key: string) {
+    return this.watchKey.has(key)
   }
 
-  getPrefix(watchName: string) {
-    let firstNode = watchName.split('.')[0];
+  getPrefix (watchName: string) {
+    const firstNode = watchName.split('.')[0]
     if (firstNode.indexOf('$') > -1) {
-      return watchName.replace('$', '');
+      return watchName.replace('$', '')
     }
     if (this.dataRender && this.dataRender.hasReactiveKey(firstNode)) {
       return `${this.options.dataName}.${watchName}`
@@ -75,80 +75,80 @@ export default class WatchRender {
       return `${watchName}.value`
     }
     if (this.vuexRender && this.vuexRender.stateHookMap.has(firstNode)) {
-      const { prefix, value } = this.vuexRender.stateHookMap.get(firstNode);
-      if(prefix)  return `${prefix}.${watchName}`
-      let arr = watchName.split('.');
-      arr[0] = value;
-      return arr.join('.');
+      const { prefix, value } = this.vuexRender.stateHookMap.get(firstNode)
+      if (prefix) return `${prefix}.${watchName}`
+      const arr = watchName.split('.')
+      arr[0] = value
+      return arr.join('.')
     }
   }
 
-  addPrefix(key: any) {
+  addPrefix (key: any) {
     try {
-      let watchName = key.name ? key.name : key.value;
-      let prefix = this.getPrefix(watchName)
+      let watchName = key.name ? key.name : key.value
+      const prefix = this.getPrefix(watchName)
       if (prefix) {
         watchName = prefix
       }
-      return parse(watchName, {
+      return (parse(watchName, {
         sourceType: 'module',
-        plugins:["jsx"]
-      }).program.body[0]?.expression
+        plugins: ['jsx']
+      }).program.body[0] as any)?.expression
     } catch (error) {
-      console.error('addPrefix----',key)
+      console.error('addPrefix----', key)
     }
   }
 
-  createWatchNode(watchItem: any, watchParams:Array<any>=[]) {
-    let watchNameNode = this.addPrefix(watchItem.key);
+  createWatchNode (watchItem: any, watchParams:Array<any> = []) {
+    const watchNameNode = this.addPrefix(watchItem.key)
     // console.log('watchNameNode---',watchNameNode,watchItem.key)
     if (['route'].includes(watchNameNode.name)) {
       watchParams.push(t.objectProperty(t.identifier('deep'), t.booleanLiteral(true)))
     }
-    let watchAttribute = arrowFunctionExpression([], watchNameNode)
-    let watchFn;
+    const watchAttribute = arrowFunctionExpression([], watchNameNode)
+    let watchFn
     if (watchItem.params && watchItem.body) {
-       watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
-    } else if(watchItem.value) {
+      watchFn = arrowFunctionExpression(watchItem.params, watchItem.body)
+    } else if (watchItem.value) {
       watchFn = t.identifier(watchItem.value)
     }
-    let params = [watchAttribute, watchFn];
+    const params = [watchAttribute, watchFn]
     if (watchParams.length > 0) {
       params.push(t.objectExpression(watchParams) as any)
     }
-    let fn = createRunFunction(OptionsApi.Watch, params as any)
+    const fn = createRunFunction(OptionsApi.Watch, params as any)
     this.newAst.program.body.push(fn)
   }
 
-  renderObjectMethod() {
+  renderObjectMethod () {
     this.objectWatch.forEach((item) => this.createWatchNode(item))
   }
 
-  dealWithProperty(node) {
-    const value = node.value;
+  dealWithProperty (node: { value: any; key: any }) {
+    const value = node.value
     if (value.properties) {
       let watchItem: any = {}
-      let watchParams: any = []
+      const watchParams: any = []
       value.properties.forEach((v: any) => {
-        if (v.key.name == "handler") {
+        if (v.key.name == 'handler') {
           if (v.body) {
             watchItem = {
               params: v.params,
               body: v.body,
               key: node.key
-            } 
+            }
           } else if (v.value && t.isStringLiteral(v.value)) {
             watchItem = {
               params: v.params || null,
               body: v.body || null,
               key: node.key,
-              value:v.value.value
+              value: v.value.value
             }
-          }else if (v.value && t.isFunctionExpression(v.value)) {
+          } else if (v.value && t.isFunctionExpression(v.value)) {
             watchItem = {
               params: v.value.params,
               body: v.value.body,
-              key: node.key,
+              key: node.key
             }
           }
         } else {
@@ -157,21 +157,20 @@ export default class WatchRender {
       })
       this.createWatchNode(watchItem, watchParams)
     } else if (value.body) {
-      let watchItem = {
+      const watchItem = {
         params: value.params,
         body: value.body,
         key: node.key
       }
       this.createWatchNode(watchItem)
     }
-
   }
 
-  renderObjectProperty() {
+  renderObjectProperty () {
     this.objectProperty.forEach((item) => this.dealWithProperty(item))
   }
 
-  render() {
+  render () {
     this.renderObjectProperty()
     this.renderObjectMethod()
   }

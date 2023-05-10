@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "dev": "tsup ./src/index.ts --format cjs,esm  --clean --watch",
-    "build": "tsup ./src/index.ts --format cjs,esm  --clean --minify"
+    "build": "eslint --fix src && tsup ./src/index.ts --format cjs,esm  --clean --minify",
+    "eslint": "eslint --fix src"
   },
   "bin": {
     "magicTurn": "./index.js"
@@ -23,9 +24,19 @@
   "author": "chaorenluo",
   "license": "ISC",
   "devDependencies": {
+    "@babel/eslint-parser": "^7.21.8",
     "@babel/types": "7.19.0",
+    "@types/babel__generator": "^7.6.4",
     "@types/babel__traverse": "7.18.1",
     "@types/node": "18.7.16",
+    "@typescript-eslint/eslint-plugin": "^5.26.0",
+    "@typescript-eslint/parser": "^5.26.0",
+    "eslint": "^7.12.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "magic-turn": "^0.0.10",
     "tsup": "6.2.3",
     "typescript": "4.8.3",
     "typescript-transform-paths": "3.3.1"

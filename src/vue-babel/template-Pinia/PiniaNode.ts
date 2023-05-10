@@ -1,28 +1,29 @@
-import parser from "@babel/parser";
-import t from "@babel/types";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
+import parser from '@babel/parser'
+import t from '@babel/types'
+import traverse from '@babel/traverse'
+import generate from '@babel/generator'
+import { Config } from '../../config'
 import {
   modifyCycleName,
   getPiniaName,
   getPiniaVariable,
   createCallExpression as createCallExpressionTo,
-  createMemberExpression,
-} from "../template-script/utils";
+  createMemberExpression
+} from '../template-script/utils'
 
-const { parse } = parser;
+const { parse } = parser
 
 enum PinnaType {
-  state = "state",
-  actions = "actions",
-  mutations = "mutations",
-  getters = "getters",
+  state = 'state',
+  actions = 'actions',
+  mutations = 'mutations',
+  getters = 'getters',
 }
 
 export default class PinnaNode {
   astNode = {};
   oldAstNode = {};
-  options = {};
+  options:Config;
   importModules = new Set();
   importGlobal = new Set();
   additionalModule = new Set();
@@ -32,308 +33,306 @@ export default class PinnaNode {
   actionsMap = new Map<string, any>();
   mutationsMap = new Map<string, any>();
 
-  fileCode = "";
-  filePath = "";
-  fileName = "";
-  pathPrefix = "";
+  fileCode = '';
+  filePath = '';
+  fileName = '';
+  pathPrefix = '';
 
   static cacheNode = new Map<string, PinnaNode>();
 
-  constructor(
+  constructor (
     _fileCode: string,
     _filePath: string,
     _fileName: string,
     _pathPrefix: string,
     _options: any
   ) {
-    this.fileCode = _fileCode;
-    this.filePath = _filePath;
-    this.fileName = _fileName;
-    this.pathPrefix = _pathPrefix;
-    this.options = _options;
-    this.createAst();
+    this.fileCode = _fileCode
+    this.filePath = _filePath
+    this.fileName = _fileName
+    this.pathPrefix = _pathPrefix
+    this.options = _options
+    this.createAst()
   }
 
-  addVariableDeclarator(name: string) {
-    name = getPiniaVariable(name);
-    let callExpression = t.callExpression(
-      t.identifier(modifyCycleName(name, "use")),
+  addVariableDeclarator (name: string) {
+    name = getPiniaVariable(name)
+    const callExpression = t.callExpression(
+      t.identifier(modifyCycleName(name, 'use')),
       []
-    );
-    let declarations = t.variableDeclarator(t.identifier(name), callExpression);
-    let variableDeclaration = t.variableDeclaration("const", [declarations]);
-    return variableDeclaration;
+    )
+    const declarations = t.variableDeclarator(t.identifier(name), callExpression)
+    const variableDeclaration = t.variableDeclaration('const', [declarations])
+    return variableDeclaration
   }
 
-
-  getParentObjectMethod(path: any, name:string) {
-    let newPath = path;
-    while (newPath && newPath.type != "ObjectMethod") {
-      newPath = newPath.parentPath;
+  getParentObjectMethod (path: any, name:string) {
+    let newPath = path
+    while (newPath && newPath.type != 'ObjectMethod') {
+      newPath = newPath.parentPath
     }
-  
+
     if (newPath) {
-      let pathNode = newPath.node;
-      let methodName = pathNode.key.name;
-      let useModuleVal = this.useModules.get(methodName);
-      let createHook = () => {
-        this.importModules.add(name);
-        let variableDeclaration = this.addVariableDeclarator(name);
-        pathNode.body.body.unshift(variableDeclaration);
-      };
+      const pathNode = newPath.node
+      const methodName = pathNode.key.name
+      const useModuleVal = this.useModules.get(methodName)
+      const createHook = () => {
+        this.importModules.add(name)
+        const variableDeclaration = this.addVariableDeclarator(name)
+        pathNode.body.body.unshift(variableDeclaration)
+      }
       if (!useModuleVal) {
-        this.useModules.set(methodName, [name]);
-        createHook();
+        this.useModules.set(methodName, [name])
+        createHook()
       } else if (useModuleVal && !useModuleVal.includes(name)) {
-        useModuleVal.push(name);
-        this.useModules.set(methodName, useModuleVal);
-        createHook();
+        useModuleVal.push(name)
+        this.useModules.set(methodName, useModuleVal)
+        createHook()
       }
     }
   }
 
-  dealWithType(properties: Array<any>, nodeName: PinnaType) {
+  dealWithType (properties: Array<any>, nodeName: PinnaType) {
     properties.forEach((item) => {
-      let name = item.key.name;
-      if (item.type === "ObjectMethod" && item.params) {
-        item.params.shift();
+      const name = item.key.name
+      if (item.type === 'ObjectMethod' && item.params) {
+        item.params.shift()
       }
-      this[`${nodeName}Map`].set(name, item);
-    });
+      this[`${nodeName}Map`].set(name, item)
+    })
   }
 
-  createCallExpression(arg: Array<any>) {
-    let newArg = JSON.parse(JSON.stringify(arg));
-    let methodName = arg[0].value;
-    let memberExpression = t.memberExpression(
+  createCallExpression (arg: Array<any>) {
+    const newArg = JSON.parse(JSON.stringify(arg))
+    const methodName = arg[0].value
+    const memberExpression = t.memberExpression(
       t.thisExpression(),
       t.identifier(methodName)
-    );
-    return t.callExpression(memberExpression, newArg.splice(1));
+    )
+    return t.callExpression(memberExpression, newArg.splice(1))
   }
 
-  filterExport(ast: any) {
-    let body = ast.program.body;
+  filterExport (ast: any) {
+    const body = ast.program.body
     if (body) {
-      body.forEach((item) => {
+      body.forEach((item:any) => {
         if (!t.isExportNamedDeclaration(item)) {
-          this.additionalModule.add(item);
+          this.additionalModule.add(item)
         }
-      });
+      })
     }
   }
 
-  analysisCallExpression(path) {
-    const args = path.node.arguments;
-    const val = args[0].value;
-    if (!val) return;
-    let piniaPath = val.split("/");
-    let key = piniaPath.length > 1 ? piniaPath[0] : "index";
-    let keyVal = getPiniaVariable(key);
+  analysisCallExpression (path:any) {
+    const args = path.node.arguments
+    const val = args[0].value
+    if (!val) return
+    const piniaPath = val.split('/')
+    const key = piniaPath.length > 1 ? piniaPath[0] : 'index'
+    const keyVal = getPiniaVariable(key)
     if (piniaPath.length <= 1) {
-      piniaPath.unshift(key);
+      piniaPath.unshift(key)
     }
     if (keyVal != this.fileName) {
-      this.importModules.add(key);
+      this.importModules.add(key)
       this.getParentObjectMethod(path, key)
-      piniaPath[0] = getPiniaVariable(piniaPath[0]);
+      piniaPath[0] = getPiniaVariable(piniaPath[0])
     } else {
-      piniaPath[0] = 'this';
+      piniaPath[0] = 'this'
     }
 
-    const params = args.slice(1, args.length);
-    let callExpression = createCallExpressionTo(
+    const params = args.slice(1, args.length)
+    const callExpression = createCallExpressionTo(
       createMemberExpression(piniaPath.reverse()),
       params
-    );
-    path.replaceWith(callExpression);
+    )
+    path.replaceWith(callExpression)
   }
 
-  createAst() {
+  createAst () {
     const ast = parse(this.fileCode, {
-      sourceType: "module",
-      plugins:['jsx']
-    });
-    this.filterExport(ast);
-    let _this = this;
+      sourceType: 'module',
+      plugins: ['jsx']
+    })
+    this.filterExport(ast)
+    const _this = this
     traverse.default(ast, {
-      Identifier(path) {
-        const nodeName = path.node.name;
+      Identifier (path:any) {
+        const nodeName = path.node.name
         if (
           nodeName === PinnaType.actions ||
           nodeName === PinnaType.getters ||
           nodeName === PinnaType.mutations ||
           nodeName === PinnaType.state
         ) {
-          let parent = path.parent;
-          let value = parent.init || parent.value;
+          const parent = path.parent
+          const value = parent.init || parent.value
           if (parent.id && t.isObjectPattern(parent.id)) {
-            path.replaceWith(t.thisExpression());
+            path.replaceWith(t.thisExpression())
             return
           }
           if (value) {
-            let properties = value.properties;
+            let properties = value.properties
             if (nodeName === PinnaType.state && value.body) {
-              properties = value.body.properties;
+              properties = value.body.properties
             }
-            if (properties) _this.dealWithType(properties, nodeName);
+            if (properties) _this.dealWithType(properties, nodeName)
           }
         }
-
       },
-      ThisExpression(path) {
-        const property = path.parent.property;
-        if (!property) return;
-        const propertyName = property.name;
-        if (propertyName && propertyName.charAt(0) === "$") {
-          _this.importGlobal.add(propertyName);
-          if(propertyName == '$axios'){
+      ThisExpression (path:any) {
+        const property = path.parent.property
+        if (!property) return
+        const propertyName = property.name
+        if (propertyName && propertyName.charAt(0) === '$') {
+          _this.importGlobal.add(propertyName)
+          if (propertyName == '$axios') {
             property.name = '$fetch'
           }
-          path.parentPath.replaceWith(property);
+          path.parentPath.replaceWith(property)
         }
       },
-      MemberExpression(path) {
-        let nodeName = path.node.object.name;
-        const property = path.node.property;
-        let newNode = path.node;
+      MemberExpression (path:any) {
+        const nodeName = path.node.object.name
+        const property = path.node.property
+        let newNode = path.node
         if (nodeName === PinnaType.state) {
-          newNode.object = t.thisExpression();
-          path.replaceWith(newNode);
+          newNode.object = t.thisExpression()
+          path.replaceWith(newNode)
         }
-        if (nodeName === "rootState") {
-          _this.getParentObjectMethod(path, property.name);
-          newNode = newNode.property;
-          newNode.name = getPiniaVariable(newNode.name);
-          path.replaceWith(newNode);
+        if (nodeName === 'rootState') {
+          _this.getParentObjectMethod(path, property.name)
+          newNode = newNode.property
+          newNode.name = getPiniaVariable(newNode.name)
+          path.replaceWith(newNode)
         }
       },
-      CallExpression(path) {
+      CallExpression (path:any) {
         if (path.node.callee.property) {
-          let fnName = path.node.callee.property.name;
-          if (["commit", "dispatch"].includes(fnName)) {
-            _this.analysisCallExpression(path);
+          const fnName = path.node.callee.property.name
+          if (['commit', 'dispatch'].includes(fnName)) {
+            _this.analysisCallExpression(path)
           }
         } else {
-          let fnName = path.node.callee.name;
-          if (["commit", "dispatch"].includes(fnName)) {
-            let size = path.node.arguments[0].value.split('/').length;
+          const fnName = path.node.callee.name
+          if (['commit', 'dispatch'].includes(fnName)) {
+            const size = path.node.arguments[0].value.split('/').length
             // 大于1则表示是调用的其他store方法而不是本store的
             if (size > 1) {
-              _this.analysisCallExpression(path);
-              return 
+              _this.analysisCallExpression(path)
+              return
             }
-            let callExpression = _this.createCallExpression(
+            const callExpression = _this.createCallExpression(
               path.node.arguments
-            );
-            path.replaceWith(callExpression);
+            )
+            path.replaceWith(callExpression)
           }
         }
-      },
-    });
-    this.oldAstNode = ast;
+      }
+    })
+    this.oldAstNode = ast
   }
 
-  addActions(properties: Array<any>) {
+  addActions (properties: Array<any>) {
     this.actionsMap.forEach((item) => {
-      properties.push(item);
-    });
+      properties.push(item)
+    })
     this.mutationsMap.forEach((item) => {
-      properties.push(item);
-    });
+      properties.push(item)
+    })
   }
 
-  addState(properties: Array<any>) {
+  addState (properties: Array<any>) {
     this.stateMap.forEach((item) => {
-      properties.push(item);
-    });
+      properties.push(item)
+    })
   }
 
-  addGetters(properties: Array<any>) {
+  addGetters (properties: Array<any>) {
     this.gettersMap.forEach((item) => {
-      properties.push(item);
-    });
+      properties.push(item)
+    })
   }
 
-  additional(program: any) {
-    program.body = Array.from(this.additionalModule).concat(program.body);
+  additional (program: any) {
+    program.body = Array.from(this.additionalModule).concat(program.body)
   }
 
-  addImportPinia(program: any) {
-    let defineStore = t.identifier("defineStore");
-    let importSpecifier = t.importSpecifier(defineStore, defineStore);
-    let stringLiteral = t.stringLiteral("pinia");
-    let importDeclaration = t.importDeclaration(
+  addImportPinia (program: any) {
+    const defineStore = t.identifier('defineStore')
+    const importSpecifier = t.importSpecifier(defineStore, defineStore)
+    const stringLiteral = t.stringLiteral('pinia')
+    const importDeclaration = t.importDeclaration(
       [importSpecifier],
       stringLiteral
-    );
-    program.body.unshift(importDeclaration);
+    )
+    program.body.unshift(importDeclaration)
   }
 
-  addImportHooks(program: any) {
-    this.importModules.forEach((item) => {
-      let hookStore = t.identifier(getPiniaName(item));
-      let importSpecifier = t.importSpecifier(hookStore, hookStore);
-      let stringLiteral = t.stringLiteral(
+  addImportHooks (program: any) {
+    this.importModules.forEach((item:any) => {
+      const hookStore = t.identifier(getPiniaName(item))
+      const importSpecifier = t.importSpecifier(hookStore, hookStore)
+      const stringLiteral = t.stringLiteral(
         `${this.options.piniaStore.aliasPrefix}/${item}`
-      );
-      let importDeclaration = t.importDeclaration(
+      )
+      const importDeclaration = t.importDeclaration(
         [importSpecifier],
         stringLiteral
-      );
-      program.body.unshift(importDeclaration);
-    });
+      )
+      program.body.unshift(importDeclaration)
+    })
   }
 
-  async buildAst() {
-    let state = this.stateMap.size > 0 ? `state: () => ({}),` : "";
-    let getters = this.gettersMap.size > 0 ? `getters: {},` : "";
-    let actions =
+  async buildAst () {
+    const state = this.stateMap.size > 0 ? 'state: () => ({}),' : ''
+    const getters = this.gettersMap.size > 0 ? 'getters: {},' : ''
+    const actions =
       this.actionsMap.size > 0 || this.mutationsMap.size > 0
-        ? `actions: {},`
-        : "";
-    let piniaTemplate = `
-    export const ${modifyCycleName(this.fileName, "use")} = defineStore('${
+        ? 'actions: {},'
+        : ''
+    const piniaTemplate = `
+    export const ${modifyCycleName(this.fileName, 'use')} = defineStore('${
       this.fileName
     }', {
       ${state}
       ${getters}
       ${actions}
     })
-    `;
+    `
     const ast = parse(piniaTemplate, {
-      sourceType: "module",
-      plugins:["jsx"]
-    });
+      sourceType: 'module',
+      plugins: ['jsx']
+    })
 
-    this.additional(ast.program);
-    this.addImportHooks(ast.program);
-    this.addImportPinia(ast.program);
-    let _this = this;
+    this.additional(ast.program)
+    this.addImportHooks(ast.program)
+    this.addImportPinia(ast.program)
+    const _this = this
 
     traverse.default(ast, {
-      ObjectProperty(path) {
-        const node = path.node;
-        const nodeName = node.key.name;
+      ObjectProperty (path:any) {
+        const node = path.node
+        const nodeName = node.key.name
         if (nodeName === PinnaType.state && node.value.body) {
-          let properties = node.value.body.properties;
-          _this.addState(properties);
+          const properties = node.value.body.properties
+          _this.addState(properties)
         }
         if (nodeName === PinnaType.getters) {
-          let properties = node.value.properties;
-          _this.addGetters(properties);
+          const properties = node.value.properties
+          _this.addGetters(properties)
         }
         if (nodeName === PinnaType.actions) {
-          let properties = node.value.properties;
-          _this.addActions(properties);
+          const properties = node.value.properties
+          _this.addActions(properties)
         }
-      },
-    });
-    this.astNode = ast;
+      }
+    })
+    this.astNode = ast
   }
 
-  async renderPinia() {
-    let bodyCode = await generate.default(this.astNode);
-    return bodyCode.code;
+  async renderPinia () {
+    const bodyCode = await generate.default(this.astNode)
+    return bodyCode.code
   }
 }
