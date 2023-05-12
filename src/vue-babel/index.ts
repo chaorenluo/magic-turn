@@ -8,7 +8,7 @@ const decomposeTemp = (html:string) => {
   const script = html.lastIndexOf('<script>') > -1 ? html.substring(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')) : ''
   return {
     script,
-    newHtml: html.replace(script, 'LJM')
+    newHtml: html.replace(script, ' ')
   }
 }
 
