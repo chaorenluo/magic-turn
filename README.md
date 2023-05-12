@@ -33,3 +33,7 @@ magicTurn
 }
 
 ```
+
+### 贡献指南
+
+修改代码请阅读[赞助指南](./CONTRIBUTING.md)。
