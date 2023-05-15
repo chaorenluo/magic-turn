@@ -1,39 +1,48 @@
-# MagiCode
-代码转换器 可以用于把nuxt2的代码转换为nuxt3的兼容代码。
+# Magic-turn
+
+`magic-turn` 是一个代码转换器，可以将 Nuxt <span style="color:red">2</span> 的代码转换成与 Nuxt <span style="color:red">3</span> 兼容的代码。
 
 ### 安装
-npm i magic-turn --save-dev
 
-### 运行
+```bash
+npm install magic-turn --save-dev 
+```
+
+### 使用方法
+```bash
 magicTurn
+```
 
 ### 配置
-在项目根目录创建 magic.config.json 文件
 
-```javascipt 
+在项目根目录下创建 magic.config.json 文件。
+
+```json
 {
-  "dataName": "stateData", // 把vue2的data里面的响应式变量转化为vue3的reactive后的变量名如 stateData = reactive()
-  "piniaStore":{//vuex转换为pinia的配置
-    "aliasPrefix":"~/store",// 转换为pinia后导入到组件的路径别名
-    "pathVal":"./store" // store目录的路径
+  "dataName": "stateData",
+  "piniaStore": {
+    "aliasPrefix": "~/store",
+    "pathVal": "./store"
   },
-  "alias":{ //nuxt里面配置的路径别名 用于查找导入的原文件路径
-    "_MIX_":"./mixin" 
+  "alias": {
+    "_MIX_": "./mixin" 
   },
-  "output":"../new_www", //转换好的输出路径
-  "compileDir":["components","pages","layouts"] , //需要转换的文件夹
-  "labelAttribs":{ //用于修改组件上的attribs
-	 'van-action-sheet': {
-   	 'v-model':'v-model:show'
-	  },
-	  'van-dialog': {
-		'v-model':'v-model:show'
-	  },
-	}
+  "output": "../new_www",
+  "compileDir": ["components", "pages", "layouts"],
+  "labelAttribs": {
+    "van-action-sheet": {
+      "v-model": "v-model:show"
+    },
+    "van-dialog": {
+      "v-model": "v-model:show"
+    }
+  }
 }
 
 ```
 
 ### 贡献指南
 
+
 修改代码请阅读[赞助指南](./CONTRIBUTING.md)。
+
