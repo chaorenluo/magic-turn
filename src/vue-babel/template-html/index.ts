@@ -226,8 +226,8 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     }
     const slotName = elem.attribs.slot || elem.attribs['v-slot']
     // 找同级是否有重复的slot
-    if (elem.parent && elem.parent.children) {
-      const children = elem.parent.children
+    if (elem.parent && elem?.parent?.children) {
+      const children = elem?.parent?.children
       for (let i = 0; i < children.length; i++) {
         const itemAttribs = children[i].attribs || {}
         const itemSlotName = itemAttribs.slot || itemAttribs['v-slot']
@@ -240,7 +240,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
     }
     // 如果父级是template那就要往上再找父级
     if (elem.parent && elem.parent.name === 'template') {
-      const children = elem.parent.parent.children
+      const children = elem?.parent?.parent?.children
       for (let i = 0; i < children.length; i++) {
         const childrenItem = children[i]
         if (childrenItem.name === 'template') {
@@ -297,7 +297,7 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
         delete v.attribs.slot
         delete v.attribs['collect-slot']
         DomUtils.removeElement(v)
-        if (v.parent.name === 'template') {
+        if (v?.parent?.name === 'template') {
           v.attribs = { ...v.parent.attribs, ...v.attribs }
         }
         code += render(v, {
@@ -306,9 +306,10 @@ export const templateRender = async (dom: any, scriptData: any, filePath: string
       })
 
       const slotCOde = `<template #${slotName}>${code}</template>`
-      if (lastSlot.parent.name === 'template') {
+      if (lastSlot?.parent?.name === 'template') {
         DomUtils.append(lastSlot.parent, parseDocument(slotCOde))
-      } else {
+      } else if (lastSlot.parent) {
+        console.log('lastSlot.parent-----', lastSlot)
         DomUtils.appendChild(lastSlot.parent, parseDocument(slotCOde))
       }
     })

@@ -18116,13 +18116,14 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     return slotTemplate;
   };
   const findRepeatSlot = (elem) => {
+    var _a2, _b2, _c2, _d2;
     const slotTemplate = /* @__PURE__ */ new Set();
     if (elem.attribs["collect-slot"]) {
       return slotTemplate;
     }
     const slotName = elem.attribs.slot || elem.attribs["v-slot"];
-    if (elem.parent && elem.parent.children) {
-      const children = elem.parent.children;
+    if (elem.parent && ((_a2 = elem == null ? void 0 : elem.parent) == null ? void 0 : _a2.children)) {
+      const children = (_b2 = elem == null ? void 0 : elem.parent) == null ? void 0 : _b2.children;
       for (let i = 0; i < children.length; i++) {
         const itemAttribs = children[i].attribs || {};
         const itemSlotName = itemAttribs.slot || itemAttribs["v-slot"];
@@ -18133,7 +18134,7 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
       }
     }
     if (elem.parent && elem.parent.name === "template") {
-      const children = elem.parent.parent.children;
+      const children = (_d2 = (_c2 = elem == null ? void 0 : elem.parent) == null ? void 0 : _c2.parent) == null ? void 0 : _d2.children;
       for (let i = 0; i < children.length; i++) {
         const childrenItem = children[i];
         if (childrenItem.name === "template") {
@@ -18181,15 +18182,17 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
     if (slotArr.length === 0)
       return;
     slotArr.forEach((item) => {
+      var _a2;
       const arr = Array.from(item);
       let code = "";
       const lastSlot = arr[arr.length - 1];
       const slotName = lastSlot.attribs.slot || lastSlot.attribs["v-slot"];
       arr.forEach((v) => {
+        var _a3;
         delete v.attribs.slot;
         delete v.attribs["collect-slot"];
         import_htmlparser2.DomUtils.removeElement(v);
-        if (v.parent.name === "template") {
+        if (((_a3 = v == null ? void 0 : v.parent) == null ? void 0 : _a3.name) === "template") {
           v.attribs = { ...v.parent.attribs, ...v.attribs };
         }
         code += (0, import_dom_serializer.render)(v, {
@@ -18197,9 +18200,10 @@ var templateRender = async (dom, scriptData, filePath, options2) => {
         });
       });
       const slotCOde = `<template #${slotName}>${code}</template>`;
-      if (lastSlot.parent.name === "template") {
+      if (((_a2 = lastSlot == null ? void 0 : lastSlot.parent) == null ? void 0 : _a2.name) === "template") {
         import_htmlparser2.DomUtils.append(lastSlot.parent, (0, import_htmlparser2.parseDocument)(slotCOde));
-      } else {
+      } else if (lastSlot.parent) {
+        console.log("lastSlot.parent-----", lastSlot);
         import_htmlparser2.DomUtils.appendChild(lastSlot.parent, (0, import_htmlparser2.parseDocument)(slotCOde));
       }
     });

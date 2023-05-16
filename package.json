@@ -14,7 +14,7 @@
     "eslint": "eslint --fix src"
   },
   "bin": {
-    "magicTurn": "./index.js"
+    "magic-turn": "./index.js"
   },
   "bugs": "https://github.com/chaorenluo/MagiCode/issues",
   "repository": {
