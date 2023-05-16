@@ -29,7 +29,7 @@
 You will need [Node.js >= 16](https://nodejs.org) 
 
 ```bash
-git clone git@github.com:vant-ui/vant.git
+git clone git@github.com:chaorenluo/magic-turn.git
 
 # Install dependencies
 npm i
@@ -37,5 +37,4 @@ npm i
 # Start development
 npm dev
 
-npm link 
 ```
