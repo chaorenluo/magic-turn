@@ -46,6 +46,6 @@ magic-turn
 
 修改代码请阅读[赞助指南](./CONTRIBUTING.md)。
 
-## License
+### License
 
 The MIT License (MIT). Please see [License File](LICENSE) for more information.
